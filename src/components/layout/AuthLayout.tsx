@@ -1,6 +1,7 @@
 import React from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ThemeToggle } from "@/components/ui/FormElements";
+import { Link } from "react-router-dom";
 
 /**
  * Auth layout — centered card with branding.
@@ -13,7 +14,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:py-12">
       {/* Subtle radial glow behind card */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(218,165,32,0.06)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-1/3 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full radial-glow" />
       </div>
 
       {/* Theme toggle — top-right */}
@@ -25,28 +26,25 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         {/* Logo / Brand */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          {/* 
-            ── Logo placeholder ──
-            Replace the div below with an <img> tag pointing to your Aurify logo.
-            Recommended size: 48×48 or 56×56.
-          */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-btn shadow-lg">
-            <span className="font-heading text-2xl font-bold text-dark">A</span>
-          </div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-gold-gradient sm:text-4xl">
-            Aurify
-          </h1>
+          <img className="h-16 w-16" src="/images/logo.png" alt="" />
         </div>
 
         {/* Content card */}
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl sm:p-8">
+        <div className="rounded-2xl border border-(--border) bg-(--card) p-6 shadow-xl sm:p-8">
           {children}
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-          © {new Date().getFullYear()} Aurify. All rights reserved.
-        </p>
+        <div className="flex flex-col items-center align-center mt-8">
+          <Link to="/">
+            <h1 className="font-heading text-3xl font-semibold tracking-tight text-gold-gradient sm:text-4xl">
+              Aurify
+            </h1>
+          </Link>
+          <p className="mt-6 text-center text-xs text-(--muted-foreground)">
+            © {new Date().getFullYear()} Aurify. All rights reserved.
+          </p>
+        </div>
       </div>
     </div>
   );

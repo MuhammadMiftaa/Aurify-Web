@@ -17,7 +17,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={id}
-            className="block text-sm font-medium text-[var(--foreground)] opacity-80"
+            className="block text-sm font-medium text-(--foreground) opacity-80"
           >
             {label}
           </label>
@@ -26,16 +26,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           id={id}
           ref={ref}
           className={cn(
-            "w-full rounded-lg border bg-[var(--input)] px-4 py-2.5 text-sm text-[var(--foreground)]",
-            "border-[var(--border)] placeholder:text-[var(--muted-foreground)]",
+            "w-full rounded-lg border bg-(--input) px-4 py-2.5 text-sm text-(--foreground)",
+            "border-(--border) placeholder:text-(--muted-foreground)",
             "transition-colors duration-200",
-            "focus:border-[var(--ring)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)]",
-            error && "border-[var(--destructive)]",
+            "focus:border-(--ring) focus:outline-none focus:ring-1 focus:ring-(--ring)",
+            error && "border-(--destructive)",
             className,
           )}
           {...props}
         />
-        {error && <p className="text-xs text-[var(--destructive)]">{error}</p>}
+        {error && <p className="text-xs text-(--destructive)">{error}</p>}
       </div>
     );
   },
@@ -69,11 +69,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         "bg-gold-btn text-dark font-semibold hover:opacity-90 disabled:opacity-50",
       secondary:
-        "bg-[var(--secondary)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)]",
-      ghost:
-        "bg-transparent text-[var(--foreground)] hover:bg-[var(--secondary)]",
+        "bg-(--secondary) text-(--foreground) border border-(--border) hover:bg-(--muted)",
+      ghost: "bg-transparent text-(--foreground) hover:bg-(--secondary)",
       outline:
-        "bg-transparent border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--ring)] hover:text-[var(--primary)]",
+        "bg-transparent border border-(--border) text-(--foreground) hover:border-(--ring) hover:text-(--primary)",
     };
 
     const sizes = {
@@ -88,7 +87,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:ring-offset-2 focus-visible:ring-offset-(--background)",
           "disabled:cursor-not-allowed disabled:opacity-50",
           variants[variant],
           sizes[size],
@@ -129,7 +128,7 @@ export function Divider({ text }: { text?: string }) {
     <div className="relative flex items-center py-4">
       <div className="flex-1 gold-line" />
       {text && (
-        <span className="mx-4 text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+        <span className="mx-4 text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">
           {text}
         </span>
       )}
@@ -197,9 +196,9 @@ export function OAuthButton({
       type="button"
       disabled={isLoading}
       className={cn(
-        "inline-flex w-full items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)] px-4 py-2.5 text-sm font-medium text-[var(--foreground)]",
+        "inline-flex w-full items-center justify-center gap-3 rounded-lg border border-(--border) bg-(--secondary) px-4 py-2.5 text-sm font-medium text-(--foreground)",
         "transition-all duration-200",
-        "hover:border-[var(--ring)] hover:bg-[var(--muted)]",
+        "hover:border-(--ring) hover:bg-(--muted)",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
@@ -226,7 +225,7 @@ export function ThemeToggle({
     <button
       type="button"
       onClick={onToggle}
-      className="rounded-lg border border-[var(--border)] bg-[var(--secondary)] p-2 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+      className="rounded-lg border border-(--border) bg-(--secondary) p-2 text-(--muted-foreground) transition-colors hover:text-(--foreground)"
       aria-label="Toggle theme"
     >
       {theme === "dark" ? (

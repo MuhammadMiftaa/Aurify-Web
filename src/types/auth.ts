@@ -19,4 +19,5 @@ export type AuthStep =
   | "verify-otp"
   | "complete-profile"
   | "forgot-password"
-  | "set-password";
+  | "set-password"
+  | "oauth-set-password";

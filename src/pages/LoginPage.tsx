@@ -7,9 +7,15 @@ import {
   Divider,
   OAuthButton,
 } from "@/components/ui/FormElements";
-import { loginApi, getOAuthUrl } from "@/lib/api";
+import { OAuthPasswordModal } from "@/components/ui/OAuthPasswordModal";
+import { loginApi, getOAuthUrl, requestSetPasswordApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ApiError } from "@/lib/api";
+import {
+  resolveErrorMessage,
+  isOAuthPasswordConflict,
+  SUCCESS_MESSAGES,
+} from "@/lib/messages";
 import toast from "react-hot-toast";
 
 export function LoginPage() {
@@ -24,6 +30,9 @@ export function LoginPage() {
     {},
   );
 
+  // 409 modal state
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
+
   const validate = () => {
     const e: typeof errors = {};
     if (!email) e.email = "Email is required";
@@ -36,7 +45,7 @@ export function LoginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -44,17 +53,35 @@ export function LoginPage() {
     try {
       const res = await loginApi(email, password);
       setToken(res.data.token);
-      toast.success("Login successful");
+      toast.success(SUCCESS_MESSAGES.loginSuccess);
       navigate("/");
     } catch (err) {
       const apiErr = err as ApiError;
-      if (apiErr.statusCode === 409) {
-        toast.error(apiErr.message);
+      if (
+        apiErr.statusCode === 409 &&
+        isOAuthPasswordConflict(apiErr.message)
+      ) {
+        setShowOAuthModal(true);
       } else {
-        toast.error(apiErr.message || "Login failed");
+        toast.error(resolveErrorMessage(apiErr.message, "Login failed"));
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSetPasswordFromModal = async () => {
+    setIsLoading(true);
+    try {
+      await requestSetPasswordApi(email);
+      toast.success(SUCCESS_MESSAGES.otpSent);
+      navigate("/verify-otp", { state: { email, flow: "set-password" } });
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(resolveErrorMessage(apiErr.message));
+    } finally {
+      setIsLoading(false);
+      setShowOAuthModal(false);
     }
   };
 
@@ -65,10 +92,10 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <div className="space-y-1 text-center">
-        <h2 className="font-heading text-2xl font-semibold text-[var(--foreground)]">
+        <h2 className="font-heading text-2xl font-semibold text-(--foreground)">
           Welcome back
         </h2>
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <p className="text-sm text-(--muted-foreground)">
           Sign in to your Aurify account
         </p>
       </div>
@@ -100,7 +127,7 @@ export function LoginPage() {
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-[34px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            className="absolute right-3 top-10 text-(--muted-foreground) hover:text-(--foreground) transition-colors"
           >
             {showPassword ? (
               <svg
@@ -137,7 +164,7 @@ export function LoginPage() {
         <div className="flex items-center justify-end">
           <Link
             to="/forgot-password"
-            className="text-xs text-[var(--primary)] hover:underline"
+            className="text-xs text-(--primary) hover:underline"
           >
             Forgot password?
           </Link>
@@ -159,15 +186,24 @@ export function LoginPage() {
         />
       </div>
 
-      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+      <p className="mt-6 text-center text-sm text-(--muted-foreground)">
         Don&apos;t have an account?{" "}
         <Link
           to="/register"
-          className="font-medium text-[var(--primary)] hover:underline"
+          className="font-medium text-(--primary) hover:underline"
         >
           Sign up
         </Link>
       </p>
+
+      {/* 409 OAuth password modal */}
+      <OAuthPasswordModal
+        isOpen={showOAuthModal}
+        isLoading={isLoading}
+        email={email}
+        onClose={() => setShowOAuthModal(false)}
+        onSetPassword={handleSetPasswordFromModal}
+      />
     </AuthLayout>
   );
 }

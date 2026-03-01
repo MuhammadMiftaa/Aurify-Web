@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import App from "./App";
+import PWABadge from "./PWABadge";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 
@@ -13,6 +14,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <AuthProvider>
           <App />
+          <PWABadge />
           <Toaster
             position="top-right"
             toastOptions={{

@@ -7,8 +7,14 @@ import {
   Divider,
   OAuthButton,
 } from "@/components/ui/FormElements";
-import { registerApi, getOAuthUrl } from "@/lib/api";
+import { OAuthPasswordModal } from "@/components/ui/OAuthPasswordModal";
+import { registerApi, getOAuthUrl, requestSetPasswordApi } from "@/lib/api";
 import type { ApiError } from "@/lib/api";
+import {
+  resolveErrorMessage,
+  isOAuthPasswordConflict,
+  SUCCESS_MESSAGES,
+} from "@/lib/messages";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -17,6 +23,9 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string }>({});
+
+  // 409 modal state
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -27,24 +36,42 @@ export function RegisterPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsLoading(true);
     try {
       await registerApi(email);
-      toast.success("OTP sent to your email");
+      toast.success(SUCCESS_MESSAGES.otpSent);
       navigate("/verify-otp", { state: { email, flow: "register" } });
     } catch (err) {
       const apiErr = err as ApiError;
-      if (apiErr.statusCode === 409) {
-        toast.error(apiErr.message);
+      if (
+        apiErr.statusCode === 409 &&
+        isOAuthPasswordConflict(apiErr.message)
+      ) {
+        setShowOAuthModal(true);
       } else {
-        toast.error(apiErr.message || "Registration failed");
+        toast.error(resolveErrorMessage(apiErr.message, "Registration failed"));
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSetPasswordFromModal = async () => {
+    setIsLoading(true)
+    try {
+      await requestSetPasswordApi(email);
+      toast.success(SUCCESS_MESSAGES.otpSent);
+      navigate("/verify-otp", { state: { email, flow: "set-password" } });
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(resolveErrorMessage(apiErr.message));
+    } finally {
+      setIsLoading(false);
+      setShowOAuthModal(false);
     }
   };
 
@@ -55,10 +82,10 @@ export function RegisterPage() {
   return (
     <AuthLayout>
       <div className="space-y-1 text-center">
-        <h2 className="font-heading text-2xl font-semibold text-[var(--foreground)]">
+        <h2 className="font-heading text-2xl font-semibold text-(--foreground)">
           Create your account
         </h2>
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <p className="text-sm text-(--muted-foreground)">
           Enter your email to get started
         </p>
       </div>
@@ -91,15 +118,24 @@ export function RegisterPage() {
         />
       </div>
 
-      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+      <p className="mt-6 text-center text-sm text-(--muted-foreground)">
         Already have an account?{" "}
         <Link
           to="/login"
-          className="font-medium text-[var(--primary)] hover:underline"
+          className="font-medium text-(--primary) hover:underline"
         >
           Sign in
         </Link>
       </p>
+
+      {/* 409 OAuth password modal */}
+      <OAuthPasswordModal
+        isOpen={showOAuthModal}
+        isLoading={isLoading}
+        email={email}
+        onClose={() => setShowOAuthModal(false)}
+        onSetPassword={handleSetPasswordFromModal}
+      />
     </AuthLayout>
   );
 }

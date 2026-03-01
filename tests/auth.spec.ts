@@ -116,3 +116,178 @@ test.describe("Auth Pages", () => {
     await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
   });
 });
+
+test.describe("409 OAuth Password Modal", () => {
+  test("login 409 should show set-password modal", async ({ page }) => {
+    await page.route("**/auth/login", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 409,
+          message:
+            "This account was created using OAuth. Please log in with OAuth or set a password.",
+        }),
+      });
+    });
+
+    await page.goto("/login");
+
+    await page.getByLabel("Email").fill("oauth@example.com");
+    await page.getByLabel("Password").fill("password123");
+    await page.getByRole("button", { name: "Sign In" }).click();
+
+    // Modal should appear
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByText("Set a password")).toBeVisible();
+    await expect(page.getByText("oauth@example.com")).toBeVisible();
+  });
+
+  test("modal cancel should close it", async ({ page }) => {
+    await page.route("**/auth/login", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 409,
+          message:
+            "This account was created using OAuth. Please log in with OAuth or set a password.",
+        }),
+      });
+    });
+
+    await page.goto("/login");
+
+    await page.getByLabel("Email").fill("oauth@example.com");
+    await page.getByLabel("Password").fill("password123");
+    await page.getByRole("button", { name: "Sign In" }).click();
+
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+  });
+
+  test("modal set-password button should navigate to verify-otp", async ({
+    page,
+  }) => {
+    await page.route("**/auth/login", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 409,
+          message:
+            "This account was created using OAuth. Please log in with OAuth or set a password.",
+        }),
+      });
+    });
+
+    await page.route("**/auth/request-set-password", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: true,
+          statusCode: 200,
+          message: "OTP sent",
+          data: { email: "oauth@example.com" },
+        }),
+      });
+    });
+
+    await page.goto("/login");
+
+    await page.getByLabel("Email").fill("oauth@example.com");
+    await page.getByLabel("Password").fill("password123");
+    await page.getByRole("button", { name: "Sign In" }).click();
+
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.getByRole("button", { name: "Set Password" }).click();
+
+    await expect(page).toHaveURL(/\/verify-otp/);
+  });
+
+  test("register 409 should show set-password modal", async ({ page }) => {
+    await page.route("**/auth/register", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 409,
+          message:
+            "Email already registered. Please log in with OAuth or set a password.",
+        }),
+      });
+    });
+
+    await page.goto("/register");
+
+    await page.getByLabel("Email").fill("oauth@example.com");
+    await page.getByRole("button", { name: "Continue" }).click();
+
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByText("Set a password")).toBeVisible();
+  });
+});
+
+test.describe("Friendly Error Messages", () => {
+  test("login should show friendly message for invalid password", async ({
+    page,
+  }) => {
+    await page.route("**/auth/login", async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 400,
+          message: "Invalid password",
+        }),
+      });
+    });
+
+    await page.goto("/login");
+
+    await page.getByLabel("Email").fill("user@example.com");
+    await page.getByLabel("Password").fill("wrongpassword");
+    await page.getByRole("button", { name: "Sign In" }).click();
+
+    // Should show the friendly mapped message
+    await expect(
+      page.getByText("Incorrect password. Please try again."),
+    ).toBeVisible();
+  });
+
+  test("login should show friendly message for user not found", async ({
+    page,
+  }) => {
+    await page.route("**/auth/login", async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: false,
+          statusCode: 404,
+          message: "User not found",
+        }),
+      });
+    });
+
+    await page.goto("/login");
+
+    await page.getByLabel("Email").fill("noone@example.com");
+    await page.getByLabel("Password").fill("password123");
+    await page.getByRole("button", { name: "Sign In" }).click();
+
+    await expect(
+      page.getByText("No account found with this email address."),
+    ).toBeVisible();
+  });
+});

@@ -4,6 +4,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input, Button } from "@/components/ui/FormElements";
 import { requestSetPasswordApi } from "@/lib/api";
 import type { ApiError } from "@/lib/api";
+import { resolveErrorMessage, SUCCESS_MESSAGES } from "@/lib/messages";
 import toast from "react-hot-toast";
 
 export function ForgotPasswordPage() {
@@ -21,18 +22,18 @@ export function ForgotPasswordPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsLoading(true);
     try {
       await requestSetPasswordApi(email);
-      toast.success("OTP sent to your email");
+      toast.success(SUCCESS_MESSAGES.otpSent);
       navigate("/verify-otp", { state: { email, flow: "forgot-password" } });
     } catch (err) {
       const apiErr = err as ApiError;
-      toast.error(apiErr.message || "Something went wrong");
+      toast.error(resolveErrorMessage(apiErr.message));
     } finally {
       setIsLoading(false);
     }
@@ -41,10 +42,10 @@ export function ForgotPasswordPage() {
   return (
     <AuthLayout>
       <div className="space-y-1 text-center">
-        <h2 className="font-heading text-2xl font-semibold text-[var(--foreground)]">
+        <h2 className="font-heading text-2xl font-semibold text-(--foreground)">
           Reset your password
         </h2>
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <p className="text-sm text-(--muted-foreground)">
           Enter your email and we&apos;ll send you a verification code
         </p>
       </div>
@@ -66,11 +67,11 @@ export function ForgotPasswordPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+      <p className="mt-6 text-center text-sm text-(--muted-foreground)">
         Remember your password?{" "}
         <Link
           to="/login"
-          className="font-medium text-[var(--primary)] hover:underline"
+          className="font-medium text-(--primary) hover:underline"
         >
           Sign in
         </Link>

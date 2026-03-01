@@ -61,33 +61,33 @@
 }
 
 .light {
-  --background: #faf9f6;
-  --foreground: #1a1a1a;
+  --background: #fffef9;
+  --foreground: #0a0a0a;
 
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #0a0a0a;
 
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
+  --popover-foreground: #0a0a0a;
 
-  --primary: #8b6914;
-  --primary-foreground: #fff9e6;
+  --primary: #ffd700;
+  --primary-foreground: #0a0a0a;
 
-  --secondary: #f5f0e8;
-  --secondary-foreground: #1a1a1a;
+  --secondary: #fff9e6;
+  --secondary-foreground: #0a0a0a;
 
-  --accent: #daa520;
+  --accent: #f5deb3;
   --accent-foreground: #0a0a0a;
 
-  --muted: #f0ebe3;
-  --muted-foreground: #6b6b6b;
+  --muted: #fffbf0;
+  --muted-foreground: #525252;
 
-  --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
-  --border: rgba(139, 105, 20, 0.2);
-  --input: #f0ebe3;
-  --ring: #8b6914;
+  --border: rgba(218, 165, 32, 0.25);
+  --input: #fffbf0;
+  --ring: #ffd700;
 }
 
 /* ── Base Styles ── */
@@ -136,6 +136,20 @@
     background-clip: text;
   }
 
+  .light .text-gold-gradient {
+    background: linear-gradient(
+      135deg,
+      #ffd700 0%,
+      #f5deb3 30%,
+      #fff9e6 50%,
+      #f5deb3 70%,
+      #ffd700 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .text-gold-shine {
     background: linear-gradient(
       90deg,
@@ -144,6 +158,22 @@
       #f5deb3,
       #ffd700,
       #daa520
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gold-shimmer 4s ease-in-out infinite;
+  }
+
+  .light .text-gold-shine {
+    background: linear-gradient(
+      90deg,
+      #ffd700,
+      #fff9e6,
+      #f5deb3,
+      #fff9e6,
+      #ffd700
     );
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -164,14 +194,34 @@
     background: linear-gradient(135deg, #daa520 0%, #ffd700 50%, #f5deb3 100%);
   }
 
+  /* Light mode button - bright gold with glow */
+  .light .bg-gold-btn {
+    background: linear-gradient(135deg, #ffd700 0%, #f5deb3 50%, #fff9e6 100%);
+  }
+
+  .light .bg-gold-btn:hover {
+    background: linear-gradient(135deg, #ffed4e 0%, #ffd700 50%, #f5deb3 100%);
+  }
+
   .border-gold {
     border-color: rgba(218, 165, 32, 0.3);
+  }
+
+  .light .border-gold {
+    border-color: rgba(255, 215, 0, 0.4);
   }
 
   .glow-gold {
     box-shadow:
       0 0 20px rgba(218, 165, 32, 0.1),
       0 0 60px rgba(218, 165, 32, 0.03);
+  }
+
+  .light .glow-gold {
+    box-shadow:
+      0 0 30px rgba(255, 215, 0, 0.25),
+      0 0 80px rgba(255, 215, 0, 0.12),
+      0 4px 20px rgba(218, 165, 32, 0.15);
   }
 
   .gold-line {
@@ -181,6 +231,32 @@
       transparent,
       rgba(218, 165, 32, 0.4),
       transparent
+    );
+  }
+
+  .light .gold-line {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 215, 0, 0.5),
+      transparent
+    );
+  }
+
+  /* Radial glow behind card */
+  .radial-glow {
+    background: radial-gradient(
+      circle,
+      rgba(218, 165, 32, 0.06) 0%,
+      transparent 70%
+    );
+  }
+
+  .light .radial-glow {
+    background: radial-gradient(
+      circle,
+      rgba(255, 215, 0, 0.12) 0%,
+      transparent 70%
     );
   }
 }
