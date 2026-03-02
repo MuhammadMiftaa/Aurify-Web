@@ -16,123 +16,132 @@ export interface DateOption {
 // ── Wallet ──
 
 export interface Wallet {
-  id: string;
-  userId: string;
-  walletTypeId: string;
-  walletType: string;
-  walletTypeName: string;
-  name: string;
-  number: string;
-  balance: number;
+  wallet_id: string;
+  user_id: string;
+  wallet_name: string;
+  wallet_type: string;
+  wallet_type_name: string;
+  balance?: number;
+  currency: string;
+  is_active: boolean;
 }
 
 // ── Financial Summary ──
 
 export interface InvestmentSummary {
-  TotalInvested: number;
-  TotalCurrentValuation: number;
-  TotalSoldAmount: number;
-  TotalDeficit: number;
-  UnrealizedGain: number;
-  RealizedGain: number;
-  InvestmentGrowthPct: number;
-  BuyCount: number;
-  SellCount: number;
-  ActivePositions: number;
+  total_invested: number;
+  total_current_valuation?: number;
+  total_sold_amount?: number;
+  total_deficit?: number;
+  unrealized_gain?: number;
+  realized_gain?: number;
+  investment_growth_pct: number;
+  buy_count: number;
+  sell_count?: number;
+  active_positions: number;
 }
 
 export interface NetWorth {
-  Total: number;
-  WalletPortion: number;
-  InvestmentPortion: number;
-  NetWorthPrev: number;
-  NetWorthGrowthPct: number;
+  total: number;
+  wallet_portion?: number;
+  investment_portion?: number;
+  net_worth_prev?: number;
+  net_worth_growth_pct?: number;
+}
+
+export interface TopCategory {
+  category_id: string;
+  category_name: string;
+  amount: number;
+  percentage: number;
+  transaction_count: number;
 }
 
 export interface FinancialSummary {
-  UserID: string;
-  PeriodType: string;
-  PeriodKey: string;
-  PeriodStart: string;
-  PeriodEnd: string;
+  user_id: string;
+  period_type: string;
+  period_key: string;
+  period_start: string;
+  period_end: string;
 
-  IncomeNow: number;
-  ExpenseNow: number;
-  ProfitNow: number;
-  BalanceNow: number;
+  income_now: number;
+  expense_now: number;
+  profit_now: number;
+  balance_now: number;
 
-  IncomePrev: number;
-  ExpensePrev: number;
-  ProfitPrev: number;
-  BalancePrev: number;
+  income_prev?: number;
+  expense_prev?: number;
+  profit_prev?: number;
+  balance_prev?: number;
 
-  IncomeGrowthPct: number;
-  ExpenseGrowthPct: number;
-  ProfitGrowthPct: number;
-  BalanceGrowthPct: number;
+  income_growth_pct?: number;
+  expense_growth_pct?: number;
+  profit_growth_pct?: number;
+  balance_growth_pct?: number;
 
-  SavingsRate: number;
-  ExpenseToIncomeRatio: number;
-  BurnRateDaily: number;
-  AvgIncomeDaily: number;
-  AvgExpenseDaily: number;
-  RunwayDays: number;
+  savings_rate: number;
+  expense_to_income_ratio: number;
+  burn_rate_daily: number;
+  avg_income_daily?: number;
+  avg_expense_daily?: number;
+  runway_days?: number;
 
-  TotalTransactions: number;
-  IncomeTransactionCount: number;
-  ExpenseTransactionCount: number;
-  AvgTransactionAmount: number;
-  LargestIncome: number;
-  LargestExpense: number;
+  total_transactions: number;
+  income_transaction_count?: number;
+  expense_transaction_count?: number;
+  avg_transaction_amount?: number;
+  largest_income?: number;
+  largest_expense?: number;
 
-  InvestmentSummary: InvestmentSummary;
-  NetWorth: NetWorth;
+  investment_summary?: InvestmentSummary;
+  net_worth?: NetWorth;
+  top_expense_categories?: TopCategory[];
+  top_income_categories?: TopCategory[];
 }
 
 // ── Balance Snapshot ──
 
 export interface BalanceSnapshot {
-  Year: number;
-  Month: number;
-  Day?: number;
-  Week?: number;
-  WalletID?: string;
-  WalletName?: string;
-  OpeningBalance: number;
-  ClosingBalance: number;
-  TotalIncome: number;
-  TotalExpense: number;
-  NetChange: number;
-  TransactionCount?: number;
-  TotalTransactions?: number;
-  Date?: string;
+  year: number;
+  month: number;
+  day?: number;
+  week?: number;
+  wallet_id?: string;
+  wallet_name?: string;
+  opening_balance: number;
+  closing_balance?: number;
+  total_income?: number;
+  total_expense?: number;
+  net_change: number;
+  transaction_count?: number;
+  date?: string;
 }
 
 // ── Transaction Category ──
 
 export interface TransactionCategory {
-  CategoryID: string;
-  CategoryName: string;
-  CategoryType: "income" | "expense";
-  TotalAmount: number;
-  TotalTransactions: number;
+  category_id: string;
+  category_name: string;
+  category_type: "income" | "expense" | "fund_transfer";
+  total_amount: number;
+  total_transactions: number;
 }
 
 // ── Net Worth Composition ──
 
 export interface NetWorthSlice {
-  Label: string;
-  Amount: number;
-  Percentage: number;
-  Details?: {
-    ItemCount: number;
-    Description: string;
-    UnrealizedGain: number;
+  label: string;
+  amount: number;
+  percentage: number;
+  details?: {
+    item_count: number;
+    description: string;
+    unrealized_gain?: number;
   };
 }
 
 export interface NetWorthComposition {
-  UserID: string;
-  Total: number;
-  Slices: NetWorthSlice[];
+  user_id: string;
+  total: number;
+  slices: NetWorthSlice[];
 }

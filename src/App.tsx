@@ -7,6 +7,9 @@ import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { SetPasswordPage } from "./pages/SetPasswordPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { WalletPage } from "./pages/WalletPage";
+import { InvestmentPage } from "./pages/InvestmentPage";
+import { TransactionPage } from "./pages/TransactionPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -30,6 +33,30 @@ function App() {
         element={
           <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/wallet"
+        element={
+          <PrivateRoute>
+            <WalletPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/investment"
+        element={
+          <PrivateRoute>
+            <InvestmentPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/transaction"
+        element={
+          <PrivateRoute>
+            <TransactionPage />
           </PrivateRoute>
         }
       />

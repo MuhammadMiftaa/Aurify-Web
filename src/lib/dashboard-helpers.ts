@@ -51,16 +51,16 @@ export function monthLabel(m: number): string {
  * Balance snapshot → chart label
  */
 export function snapshotLabel(s: {
-  Year?: number;
-  Month?: number;
-  Day?: number;
-  Week?: number;
-  Date?: string;
+  year?: number;
+  month?: number;
+  day?: number;
+  week?: number;
+  date?: string;
 }): string {
-  if (s.Day) return `${s.Day} ${monthLabel(s.Month ?? 1)}`;
-  if (s.Week) return `W${s.Week}`;
-  if (s.Month) return monthLabel(s.Month);
-  return String(s.Year ?? "");
+  if (s.day) return `${s.day} ${monthLabel(s.month ?? 1)}`;
+  if (s.week) return `W${s.week}`;
+  if (s.month) return monthLabel(s.month);
+  return String(s.year ?? "");
 }
 
 /**

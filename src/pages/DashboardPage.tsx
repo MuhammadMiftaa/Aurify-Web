@@ -12,9 +12,8 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell,
 } from "recharts";
-import { useAuth } from "@/contexts/AuthContext";
+import { Sun, Moon } from "lucide-react";
 import {
   useWallets,
   useFinancialSummary,
@@ -31,6 +30,21 @@ import {
 } from "@/lib/dashboard-helpers";
 import { cn } from "@/lib/utils";
 import type { FinancialSummary } from "@/types/dashboard";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useTheme } from "@/contexts/ThemeContext";
+import {
+  SkeletonKPICard,
+  SkeletonChart,
+  SkeletonCategoryList,
+  SkeletonHealthBars,
+  SkeletonNetWorth,
+  SkeletonInvestmentSummary,
+} from "@/components/ui/Skeleton";
+import {
+  EmptyChartData,
+  EmptyFinancialData,
+  EmptyTransactions,
+} from "@/components/ui/EmptyState";
 
 // ── Chart Color Tokens ──
 const CHART = {
@@ -228,17 +242,11 @@ function ChartTooltip({
   );
 }
 
-function Skeleton({ className: cls }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-lg bg-(--muted)", cls)} />;
-}
-
 // ════════════════════════════════════════════
 // MAIN DASHBOARD
 // ════════════════════════════════════════════
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
-
   // ── Global filter state ──
   const [walletID, setWalletID] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -261,6 +269,9 @@ export function DashboardPage() {
     "expense",
   );
 
+  // ── Theme ──
+  const { theme, toggleTheme } = useTheme();
+
   // ── Data hooks ──
   const wallets = useWallets();
   const financialSummary = useFinancialSummary(globalFilter);
@@ -279,9 +290,9 @@ export function DashboardPage() {
     if (!balance.data) return [];
     return balance.data.map((s) => ({
       label: snapshotLabel(s),
-      closing: s.ClosingBalance,
-      income: s.TotalIncome,
-      expense: s.TotalExpense,
+      closing: s.closing_balance ?? 0,
+      income: s.total_income ?? 0,
+      expense: s.total_expense ?? 0,
     }));
   }, [balance.data]);
 
@@ -289,24 +300,27 @@ export function DashboardPage() {
   const incomeExpenseData = useMemo(() => {
     if (!financialSummary.data) return [];
     return financialSummary.data.map((s) => ({
-      period: s.PeriodKey,
-      income: s.IncomeNow,
-      expense: s.ExpenseNow,
-      profit: s.ProfitNow,
+      period: s.period_key,
+      income: s.income_now,
+      expense: s.expense_now,
+      profit: s.profit_now,
     }));
   }, [financialSummary.data]);
 
   // ── Derived: top categories ──
   const topCategories = useMemo(() => {
     if (!transactions.data?.length) return [];
-    const total = transactions.data.reduce((s, c) => s + c.TotalAmount, 0);
+    const total = transactions.data.reduce((s, c) => s + c.total_amount, 0);
     return transactions.data.slice(0, 5).map((c) => ({
-      name: c.CategoryName,
-      amount: c.TotalAmount,
-      pct: total > 0 ? (c.TotalAmount / total) * 100 : 0,
-      count: c.TotalTransactions,
+      name: c.category_name,
+      amount: c.total_amount,
+      pct: total > 0 ? (c.total_amount / total) * 100 : 0,
+      count: c.total_transactions,
     }));
   }, [transactions.data]);
+
+  // ── Pie chart slice colors ──
+  const pieSliceColors = CHART.pie;
 
   const axisStyle = {
     fill: "var(--muted-foreground)",
@@ -314,24 +328,30 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-(--background) font-body text-(--foreground)">
+    <MainLayout>
       {/* ════════ HEADER — Sticky Global Filter ════════ */}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-(--border) bg-(--card) px-6 py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-btn text-sm font-extrabold text-dark">
-            R
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-(--border) bg-(--card) px-6 py-3.5">
+        <div>
+          <div className="text-sm font-bold tracking-wide text-(--foreground)">
+            Financial Dashboard
           </div>
-          <div>
-            <div className="text-sm font-bold tracking-wide">
-              Refina Analytics
-            </div>
-            <div className="text-[10px] text-(--muted-foreground)">
-              Financial Dashboard
-            </div>
+          <div className="text-[10px] text-(--muted-foreground)">
+            Overview of your financial health
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Theme toggle — icon only */}
+          <button
+            onClick={toggleTheme}
+            title={
+              theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+            }
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
+          >
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+
           <span className="mr-1 text-[10px] uppercase tracking-widest text-(--muted-foreground)">
             Filter
           </span>
@@ -344,8 +364,8 @@ export function DashboardPage() {
           >
             <option value="">All Wallets</option>
             {wallets.data?.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
+              <option key={w.wallet_id} value={w.wallet_id}>
+                {w.wallet_name}
               </option>
             ))}
           </select>
@@ -368,21 +388,6 @@ export function DashboardPage() {
             }
             className="rounded-lg border border-(--border) bg-(--input) px-2.5 py-1.5 text-xs text-(--foreground) outline-none focus:border-(--ring)"
           />
-
-          {/* User info / logout */}
-          {user && (
-            <div className="ml-2 flex items-center gap-2">
-              <span className="text-[11px] text-(--muted-foreground)">
-                {user.email}
-              </span>
-              <button
-                onClick={logout}
-                className="rounded-md border border-(--border) px-2 py-1 text-[10px] font-semibold text-(--muted-foreground) transition hover:text-(--foreground)"
-              >
-                Logout
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
@@ -392,44 +397,54 @@ export function DashboardPage() {
         {financialSummary.loading ? (
           <div className="flex gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-28 flex-1" />
+              <SkeletonKPICard key={i} />
             ))}
           </div>
         ) : latest ? (
           <div className="flex gap-3">
             <KPICard
               label="Total Income"
-              value={fmtShort(latest.IncomeNow)}
-              growth={latest.IncomeGrowthPct}
+              value={fmtShort(latest.income_now)}
+              growth={latest.income_growth_pct}
               accent={CHART.green}
-              sub={`Largest: ${fmtShort(latest.LargestIncome)}`}
+              sub={
+                latest.largest_income !== undefined
+                  ? `Largest: ${fmtShort(latest.largest_income)}`
+                  : undefined
+              }
             />
             <KPICard
               label="Total Expense"
-              value={fmtShort(latest.ExpenseNow)}
-              growth={latest.ExpenseGrowthPct}
+              value={fmtShort(latest.expense_now)}
+              growth={latest.expense_growth_pct}
               accent={CHART.red}
-              sub={`Largest: ${fmtShort(latest.LargestExpense)}`}
+              sub={
+                latest.largest_expense !== undefined
+                  ? `Largest: ${fmtShort(latest.largest_expense)}`
+                  : undefined
+              }
             />
             <KPICard
               label="Net Profit"
-              value={fmtShort(latest.ProfitNow)}
-              growth={latest.ProfitGrowthPct}
+              value={fmtShort(latest.profit_now)}
+              growth={latest.profit_growth_pct}
               accent={CHART.gold}
-              sub={`Savings: ${latest.SavingsRate?.toFixed(1) ?? 0}%`}
+              sub={`Savings: ${latest.savings_rate?.toFixed(1) ?? 0}%`}
             />
             <KPICard
               label="Balance"
-              value={fmtShort(latest.BalanceNow)}
-              growth={latest.BalanceGrowthPct}
+              value={fmtShort(latest.balance_now)}
+              growth={latest.balance_growth_pct}
               accent={CHART.amber}
-              sub={`Runway: ${latest.RunwayDays ?? 0} days`}
+              sub={
+                latest.runway_days !== undefined
+                  ? `Runway: ${latest.runway_days} days`
+                  : undefined
+              }
             />
           </div>
         ) : (
-          <div className="text-center text-sm text-(--muted-foreground)">
-            No financial data available
-          </div>
+          <EmptyFinancialData />
         )}
 
         {/* ── TIER 2: Balance Trend (Full Width) ── */}
@@ -438,8 +453,8 @@ export function DashboardPage() {
             <SectionHeader
               title="Balance Trend"
               subtitle={
-                wallets.data?.find((w) => w.id === walletID)?.name ??
-                "All Wallets"
+                wallets.data?.find((w) => w.wallet_id === walletID)
+                  ?.wallet_name ?? "All Wallets"
               }
             />
             <div className="flex gap-1">
@@ -461,7 +476,9 @@ export function DashboardPage() {
           </div>
 
           {balance.loading ? (
-            <Skeleton className="h-56 w-full" />
+            <SkeletonChart height={220} />
+          ) : balanceChartData.length === 0 ? (
+            <EmptyChartData title="No balance data available" />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart
@@ -546,7 +563,9 @@ export function DashboardPage() {
               subtitle="Monthly comparison"
             />
             {financialSummary.loading ? (
-              <Skeleton className="h-48 w-full" />
+              <SkeletonChart height={200} />
+            ) : incomeExpenseData.length === 0 ? (
+              <EmptyChartData title="No comparison data available" />
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
@@ -631,11 +650,7 @@ export function DashboardPage() {
               </div>
             </div>
             {transactions.loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-6 w-full" />
-                ))}
-              </div>
+              <SkeletonCategoryList rows={5} />
             ) : topCategories.length > 0 ? (
               topCategories.map((c, i) => (
                 <CategoryRow
@@ -648,9 +663,7 @@ export function DashboardPage() {
                 />
               ))
             ) : (
-              <div className="py-8 text-center text-xs text-(--muted-foreground)">
-                No category data
-              </div>
+              <EmptyTransactions />
             )}
           </Card>
 
@@ -660,20 +673,18 @@ export function DashboardPage() {
               title="Financial Health"
               subtitle="Current period indicators"
             />
-            {financialSummary.loading || !latest ? (
-              <div className="space-y-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-8 w-full" />
-                ))}
-              </div>
+            {financialSummary.loading ? (
+              <SkeletonHealthBars rows={4} />
+            ) : !latest ? (
+              <EmptyChartData title="No health indicators available" />
             ) : (
               <>
                 <HealthBar
                   label="Expense / Income Ratio"
-                  value={latest.ExpenseToIncomeRatio ?? 0}
+                  value={latest.expense_to_income_ratio ?? 0}
                   max={100}
                   color={healthColor(
-                    latest.ExpenseToIncomeRatio ?? 0,
+                    latest.expense_to_income_ratio ?? 0,
                     { green: 60, yellow: 80 },
                     true,
                   )}
@@ -681,9 +692,9 @@ export function DashboardPage() {
                 />
                 <HealthBar
                   label="Savings Rate"
-                  value={latest.SavingsRate ?? 0}
+                  value={latest.savings_rate ?? 0}
                   max={100}
-                  color={healthColor(latest.SavingsRate ?? 0, {
+                  color={healthColor(latest.savings_rate ?? 0, {
                     green: 20,
                     yellow: 10,
                   })}
@@ -691,16 +702,16 @@ export function DashboardPage() {
                 />
                 <HealthBar
                   label="Daily Burn Rate"
-                  value={latest.BurnRateDaily ?? 0}
+                  value={latest.burn_rate_daily ?? 0}
                   max={1000000}
                   color={CHART.amber}
                 />
                 <HealthBar
                   label="Runway Days"
-                  value={latest.RunwayDays ?? 0}
+                  value={latest.runway_days ?? 0}
                   max={365}
                   color={
-                    (latest.RunwayDays ?? 0) > 90 ? CHART.green : CHART.red
+                    (latest.runway_days ?? 0) > 90 ? CHART.green : CHART.red
                   }
                   suffix=" d"
                 />
@@ -710,7 +721,7 @@ export function DashboardPage() {
                       Avg Transaction
                     </div>
                     <div className="font-mono text-[13px] font-semibold text-(--foreground)">
-                      {fmtShort(latest.AvgTransactionAmount ?? 0)}
+                      {fmtShort(latest.avg_transaction_amount ?? 0)}
                     </div>
                   </div>
                   <div className="text-right">
@@ -718,7 +729,7 @@ export function DashboardPage() {
                       Largest Expense
                     </div>
                     <div className="font-mono text-[13px] font-semibold text-rose-500">
-                      {fmtShort(latest.LargestExpense ?? 0)}
+                      {fmtShort(latest.largest_expense ?? 0)}
                     </div>
                   </div>
                 </div>
@@ -736,39 +747,84 @@ export function DashboardPage() {
                 title="Net Worth Composition"
                 subtitle="Asset allocation"
               />
-              {latest?.NetWorth?.NetWorthGrowthPct !== undefined && (
-                <GrowthBadge value={latest.NetWorth.NetWorthGrowthPct} />
+              {latest?.net_worth?.net_worth_growth_pct !== undefined && (
+                <GrowthBadge value={latest.net_worth.net_worth_growth_pct} />
               )}
             </div>
 
             {netWorth.loading ? (
-              <Skeleton className="mx-auto h-40 w-40 rounded-full" />
-            ) : netWorth.data ? (
+              <SkeletonNetWorth />
+            ) : !netWorth.data ? (
+              <EmptyChartData title="No net worth data available" />
+            ) : (
               <div className="flex items-center gap-6">
-                {/* Donut */}
+                {/* Donut — shape prop instead of deprecated Cell */}
                 <div className="relative h-40 w-40 shrink-0">
                   <PieChart width={160} height={160}>
                     <Pie
-                      data={netWorth.data.Slices}
+                      data={netWorth.data.slices}
                       cx={75}
                       cy={75}
                       innerRadius={52}
                       outerRadius={72}
-                      dataKey="Amount"
+                      dataKey="amount"
                       strokeWidth={0}
                       paddingAngle={3}
-                    >
-                      {netWorth.data.Slices?.map((_, i) => (
-                        <Cell key={i} fill={CHART.pie[i] ?? CHART.gold} />
-                      ))}
-                    </Pie>
+                      shape={(props: {
+                        cx?: number;
+                        cy?: number;
+                        innerRadius?: number;
+                        outerRadius?: number;
+                        startAngle?: number;
+                        endAngle?: number;
+                        index?: number;
+                      }) => {
+                        const {
+                          cx = 0,
+                          cy = 0,
+                          innerRadius = 0,
+                          outerRadius = 0,
+                          startAngle = 0,
+                          endAngle = 0,
+                          index = 0,
+                        } = props;
+                        const color = pieSliceColors[index] ?? CHART.gold;
+                        const toRad = (deg: number) => (deg * Math.PI) / 180;
+                        const x1 =
+                          cx + outerRadius * Math.cos(toRad(-startAngle));
+                        const y1 =
+                          cy + outerRadius * Math.sin(toRad(-startAngle));
+                        const x2 =
+                          cx + outerRadius * Math.cos(toRad(-endAngle));
+                        const y2 =
+                          cy + outerRadius * Math.sin(toRad(-endAngle));
+                        const x3 =
+                          cx + innerRadius * Math.cos(toRad(-endAngle));
+                        const y3 =
+                          cy + innerRadius * Math.sin(toRad(-endAngle));
+                        const x4 =
+                          cx + innerRadius * Math.cos(toRad(-startAngle));
+                        const y4 =
+                          cy + innerRadius * Math.sin(toRad(-startAngle));
+                        const largeArcFlag =
+                          endAngle - startAngle > 180 ? 1 : 0;
+                        const d = [
+                          `M ${x1} ${y1}`,
+                          `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${x2} ${y2}`,
+                          `L ${x3} ${y3}`,
+                          `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${x4} ${y4}`,
+                          "Z",
+                        ].join(" ");
+                        return <path d={d} fill={color} />;
+                      }}
+                    />
                   </PieChart>
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
                     <div className="text-[10px] uppercase tracking-widest text-(--muted-foreground)">
                       Total
                     </div>
                     <div className="font-mono text-sm font-bold text-(--foreground)">
-                      {fmtShort(netWorth.data.Total)}
+                      {fmtShort(netWorth.data.total)}
                     </div>
                   </div>
                 </div>
@@ -780,44 +836,40 @@ export function DashboardPage() {
                       Total Net Worth
                     </div>
                     <div className="font-mono text-xl font-bold text-(--foreground)">
-                      {fmtShort(netWorth.data.Total)}
+                      {fmtShort(netWorth.data.total)}
                     </div>
                   </div>
-                  {netWorth.data.Slices?.map((s, i) => (
+                  {netWorth.data.slices?.map((s, i) => (
                     <div key={i}>
                       <div className="mb-1 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-[11px] text-(--muted-foreground)">
                           <span
                             className="inline-block h-1.75 w-1.75 rounded-sm"
                             style={{
-                              background: CHART.pie[i] ?? CHART.gold,
+                              background: pieSliceColors[i] ?? CHART.gold,
                             }}
                           />
-                          {s.Label}
+                          {s.label}
                         </span>
                         <span
                           className="font-mono text-[11px] font-semibold"
-                          style={{ color: CHART.pie[i] ?? CHART.gold }}
+                          style={{ color: pieSliceColors[i] ?? CHART.gold }}
                         >
-                          {fmtShort(s.Amount)}
+                          {fmtShort(s.amount)}
                         </span>
                       </div>
                       <div className="h-0.75 overflow-hidden rounded-full bg-(--muted)">
                         <div
                           className="h-full rounded-full"
                           style={{
-                            width: `${s.Percentage}%`,
-                            background: CHART.pie[i] ?? CHART.gold,
+                            width: `${s.percentage}%`,
+                            background: pieSliceColors[i] ?? CHART.gold,
                           }}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center text-xs text-(--muted-foreground)">
-                No net worth data
               </div>
             )}
           </Card>
@@ -828,8 +880,10 @@ export function DashboardPage() {
               title="Investment Summary"
               subtitle="Portfolio overview"
             />
-            {financialSummary.loading || !latest?.InvestmentSummary ? (
-              <Skeleton className="h-48 w-full" />
+            {financialSummary.loading ? (
+              <SkeletonInvestmentSummary />
+            ) : !latest?.investment_summary ? (
+              <EmptyChartData title="No investment data available" />
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {/* Left: financial rows */}
@@ -837,34 +891,38 @@ export function DashboardPage() {
                   {[
                     {
                       label: "Total Invested",
-                      value: fmtShort(latest.InvestmentSummary.TotalInvested),
+                      value: fmtShort(latest.investment_summary.total_invested),
                       color: "var(--foreground)",
                     },
                     {
                       label: "Current Valuation",
                       value: fmtShort(
-                        latest.InvestmentSummary.TotalCurrentValuation,
+                        latest.investment_summary.total_current_valuation ?? 0,
                       ),
                       color: CHART.gold,
                     },
                     {
                       label: "Unrealized Gain",
-                      value: `+${fmtShort(latest.InvestmentSummary.UnrealizedGain)}`,
+                      value: `${(latest.investment_summary.unrealized_gain ?? 0) >= 0 ? "+" : ""}${fmtShort(latest.investment_summary.unrealized_gain ?? 0)}`,
                       color: CHART.green,
                     },
                     {
                       label: "Realized Gain",
-                      value: `+${fmtShort(latest.InvestmentSummary.RealizedGain)}`,
+                      value: `${(latest.investment_summary.realized_gain ?? 0) >= 0 ? "+" : ""}${fmtShort(latest.investment_summary.realized_gain ?? 0)}`,
                       color: CHART.green,
                     },
                     {
                       label: "Total Sold",
-                      value: fmtShort(latest.InvestmentSummary.TotalSoldAmount),
+                      value: fmtShort(
+                        latest.investment_summary.total_sold_amount ?? 0,
+                      ),
                       color: "var(--foreground)",
                     },
                     {
                       label: "Total Deficit",
-                      value: fmtShort(latest.InvestmentSummary.TotalDeficit),
+                      value: fmtShort(
+                        latest.investment_summary.total_deficit ?? 0,
+                      ),
                       color: CHART.red,
                     },
                   ].map((row, i) => (
@@ -895,7 +953,7 @@ export function DashboardPage() {
                       </span>
                       <span className="text-[11px] font-semibold text-emerald-500">
                         +
-                        {latest.InvestmentSummary.InvestmentGrowthPct?.toFixed(
+                        {latest.investment_summary.investment_growth_pct?.toFixed(
                           1,
                         )}
                         %
@@ -908,7 +966,16 @@ export function DashboardPage() {
                       <div
                         className="h-full rounded"
                         style={{
-                          width: `${Math.min((latest.InvestmentSummary.TotalCurrentValuation / Math.max(latest.InvestmentSummary.TotalInvested, 1)) * 100, 100)}%`,
+                          width: `${Math.min(
+                            ((latest.investment_summary
+                              .total_current_valuation ?? 0) /
+                              Math.max(
+                                latest.investment_summary.total_invested,
+                                1,
+                              )) *
+                              100,
+                            100,
+                          )}%`,
                           background: `linear-gradient(90deg, ${CHART.gold}, ${CHART.green})`,
                         }}
                       />
@@ -928,24 +995,24 @@ export function DashboardPage() {
                     {[
                       {
                         label: "Active Positions",
-                        value: latest.InvestmentSummary.ActivePositions,
+                        value: latest.investment_summary.active_positions,
                         color: CHART.gold,
                       },
                       {
                         label: "Investment Growth",
                         value: fmtPct(
-                          latest.InvestmentSummary.InvestmentGrowthPct ?? 0,
+                          latest.investment_summary.investment_growth_pct ?? 0,
                         ),
                         color: CHART.green,
                       },
                       {
                         label: "Total Buys",
-                        value: latest.InvestmentSummary.BuyCount,
+                        value: latest.investment_summary.buy_count,
                         color: CHART.green,
                       },
                       {
                         label: "Total Sells",
-                        value: latest.InvestmentSummary.SellCount,
+                        value: latest.investment_summary.sell_count ?? 0,
                         color: CHART.red,
                       },
                     ].map((stat, i) => (
@@ -971,6 +1038,6 @@ export function DashboardPage() {
           </Card>
         </div>
       </main>
-    </div>
+    </MainLayout>
   );
 }

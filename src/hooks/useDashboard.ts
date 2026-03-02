@@ -162,9 +162,9 @@ export function useTransactions(
     })
       .then((res) => {
         if (id !== fetchRef.current) return;
-        // Client-side filter by category type
+        // Client-side filter by category type (exclude fund_transfer)
         const filtered = (res.data ?? []).filter(
-          (t) => t.CategoryType === categoryType,
+          (t) => t.category_type === categoryType,
         );
         setState({ data: filtered, loading: false, error: null });
       })
