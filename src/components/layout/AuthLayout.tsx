@@ -26,7 +26,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         {/* Logo / Brand */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img className="h-16 w-16" src="/images/logo.png" alt="" />
+          <img className="h-16 w-16" src="/images/icons/logo.png" alt="" />
         </div>
 
         {/* Content card */}

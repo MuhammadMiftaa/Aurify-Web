@@ -18,11 +18,8 @@ export default defineConfig({
       },
       includeAssets: [
         "favicon.ico",
-        "images/icons/icon.png",
-        "images/icons/logo.png",
-        "images/icons/ios-icon-180.png",
-        "images/icons/ios-icon-152.png",
-        "images/icons/ios-icon-120.png",
+        "images/icons/*.png",
+        "images/splash/*.png",
       ],
       manifest: {
         name: "Aurify - Financial Management",
@@ -36,143 +33,6 @@ export default defineConfig({
         scope: "/",
         categories: ["finance", "productivity"],
         icons: [
-          // ── Android icons ──
-          {
-            src: "/images/icons/android-icon-36.png",
-            sizes: "36x36",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-48.png",
-            sizes: "48x48",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-72.png",
-            sizes: "72x72",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-96.png",
-            sizes: "96x96",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-144.png",
-            sizes: "144x144",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/images/icons/android-icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          // ── Maskable icon (use the largest) ──
-          {
-            src: "/images/icons/android-icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          // ── iOS icons ──
-          {
-            src: "/images/icons/ios-icon-20.png",
-            sizes: "20x20",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-29.png",
-            sizes: "29x29",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-40.png",
-            sizes: "40x40",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-57.png",
-            sizes: "57x57",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-60.png",
-            sizes: "60x60",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-64.png",
-            sizes: "64x64",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-72.png",
-            sizes: "72x72",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-76.png",
-            sizes: "76x76",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-114.png",
-            sizes: "114x114",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-120.png",
-            sizes: "120x120",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-128.png",
-            sizes: "128x128",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-144.png",
-            sizes: "144x144",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-152.png",
-            sizes: "152x152",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-180.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-256.png",
-            sizes: "256x256",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/images/icons/ios-icon-1024.png",
-            sizes: "1024x1024",
-            type: "image/png",
-          },
-          // ── Generic multi-size icons ──
           {
             src: "/images/icons/icon-48x48.png",
             sizes: "48x48",
