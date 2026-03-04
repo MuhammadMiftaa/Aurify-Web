@@ -4,11 +4,11 @@ import type {
   TransactionListParams,
   Category,
 } from "@/types/transaction";
-import { getDummyTransactionList, DUMMY_CATEGORIES } from "@/lib/dummy-data";
-
-// TODO: Replace dummy data calls with real API calls when backend is ready
-// import { fetchTransactions, fetchCategories, ... } from "@/lib/wallet-transaction-api";
-// import { useAuth } from "@/contexts/AuthContext";
+import {
+  fetchTransactions,
+  fetchCategories,
+} from "@/lib/wallet-transaction-api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AsyncState<T> {
   data: T | null;
@@ -17,6 +17,7 @@ interface AsyncState<T> {
 }
 
 export function useTransactionList(params: TransactionListParams) {
+  const { token } = useAuth();
   const [state, setState] = useState<AsyncState<TransactionListResponse>>({
     data: null,
     loading: true,
@@ -27,18 +28,31 @@ export function useTransactionList(params: TransactionListParams) {
   const paramsRef = useRef(params);
   paramsRef.current = params;
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback(async () => {
+    if (!token) return;
+
     const id = ++fetchRef.current;
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    // Simulate API call with dummy data
-    setTimeout(() => {
+    try {
+      const result = await fetchTransactions(token, paramsRef.current);
       if (id === fetchRef.current) {
-        const result = getDummyTransactionList(paramsRef.current);
-        setState({ data: result, loading: false, error: null });
+        setState({
+          data: result.data as TransactionListResponse,
+          loading: false,
+          error: null,
+        });
       }
-    }, 500);
-  }, []);
+    } catch (err: unknown) {
+      if (id === fetchRef.current) {
+        const message =
+          err && typeof err === "object" && "message" in err
+            ? (err as { message: string }).message
+            : "Failed to fetch transactions";
+        setState({ data: null, loading: false, error: message });
+      }
+    }
+  }, [token]);
 
   useEffect(() => {
     refetch();
@@ -48,6 +62,11 @@ export function useTransactionList(params: TransactionListParams) {
     params.sort_by,
     params.sort_order,
     params.search,
+    params.wallet_id,
+    params.category_id,
+    params.category_type,
+    params.date_from,
+    params.date_to,
     refetch,
   ]);
 
@@ -55,6 +74,7 @@ export function useTransactionList(params: TransactionListParams) {
 }
 
 export function useCategories() {
+  const { token } = useAuth();
   const [state, setState] = useState<AsyncState<Category[]>>({
     data: null,
     loading: true,
@@ -62,10 +82,25 @@ export function useCategories() {
   });
 
   useEffect(() => {
-    setTimeout(() => {
-      setState({ data: DUMMY_CATEGORIES, loading: false, error: null });
-    }, 400);
-  }, []);
+    if (!token) return;
+
+    (async () => {
+      try {
+        const result = await fetchCategories(token);
+        setState({
+          data: result.data as Category[],
+          loading: false,
+          error: null,
+        });
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === "object" && "message" in err
+            ? (err as { message: string }).message
+            : "Failed to fetch categories";
+        setState({ data: null, loading: false, error: message });
+      }
+    })();
+  }, [token]);
 
   return state;
 }

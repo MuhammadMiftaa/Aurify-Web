@@ -31,10 +31,17 @@ import {
 import { cn } from "@/lib/utils";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTransactionList, useCategories } from "@/hooks/useTransaction";
 import { useWalletList } from "@/hooks/useWallet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button, Input } from "@/components/ui/FormElements";
+import {
+  createTransaction,
+  createTransfer,
+  updateTransaction as updateTransactionAPI,
+  deleteTransaction as deleteTransactionAPI,
+} from "@/lib/wallet-transaction-api";
 import type {
   Transaction,
   CreateTransactionPayload,
@@ -409,6 +416,7 @@ function TransactionDetailModal({
   onClose: () => void;
   onRefetch: () => void;
 }) {
+  const { token } = useAuth();
   const categories = useCategories();
   const wallets = useWalletList();
 
@@ -456,39 +464,52 @@ function TransactionDetailModal({
     setMode("edit");
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transaction) return;
+    if (!transaction || !token) return;
     setLoading(true);
-    const payload: UpdateTransactionPayload = {
-      wallet_id: editWalletId,
-      category_id: editCategoryId,
-      amount: parseFloat(editAmount) || 0,
-      transaction_date: new Date(editDate).toISOString(),
-      description: editDescription || undefined,
-    };
-    // TODO: Call updateTransaction API with payload
-    // TODO: For each removedAttachmentIds, call deleteAttachment API
-    // TODO: For each newAttachments, upload file and call createAttachment API
-    void payload;
-    void removedAttachmentIds;
-    void newAttachments;
-    toast.success("Transaction updated successfully!");
-    setLoading(false);
-    setNewAttachments([]);
-    setRemovedAttachmentIds([]);
-    onRefetch();
-    onClose();
+    try {
+      const payload: UpdateTransactionPayload = {
+        wallet_id: editWalletId,
+        category_id: editCategoryId,
+        amount: parseFloat(editAmount) || 0,
+        transaction_date: new Date(editDate).toISOString(),
+        description: editDescription || undefined,
+      };
+      await updateTransactionAPI(token, transaction.id, payload);
+      toast.success("Transaction updated successfully!");
+      setNewAttachments([]);
+      setRemovedAttachmentIds([]);
+      onRefetch();
+      onClose();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Failed to update transaction";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = () => {
-    if (!transaction) return;
+  const handleDelete = async () => {
+    if (!transaction || !token) return;
     setLoading(true);
-    // TODO: Call deleteTransaction API
-    toast.success("Transaction deleted successfully!");
-    setLoading(false);
-    onRefetch();
-    onClose();
+    try {
+      await deleteTransactionAPI(token, transaction.id);
+      toast.success("Transaction deleted successfully!");
+      onRefetch();
+      onClose();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Failed to delete transaction";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!transaction) return null;
@@ -967,6 +988,7 @@ function AddTransactionModal({
   onClose: () => void;
   onRefetch: () => void;
 }) {
+  const { token } = useAuth();
   const [tab, setTab] = useState<TransactionFormTab>("expense");
   const categories = useCategories();
   const wallets = useWalletList();
@@ -994,47 +1016,57 @@ function AddTransactionModal({
 
   if (!open) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     setLoading(true);
 
-    if (tab === "transfer") {
-      const cashOutCat = fundTransferCategories.find((c) =>
-        c.name.toLowerCase().includes("transfer"),
-      );
-      const cashInCat = fundTransferCategories.find((c) =>
-        c.name.toLowerCase().includes("transfer"),
-      );
-      const payload: CreateTransferPayload = {
-        from_wallet_id: fromWalletId,
-        to_wallet_id: toWalletId,
-        amount: parseFloat(amount) || 0,
-        admin_fee: parseFloat(adminFee) || 0,
-        cash_out_category_id: cashOutCat?.id ?? "",
-        cash_in_category_id: cashInCat?.id ?? "",
-        transaction_date: new Date(date).toISOString(),
-        description: description || undefined,
-      };
-      void payload;
-      toast.success("Transfer created successfully!");
-    } else {
-      const payload: CreateTransactionPayload = {
-        wallet_id: walletId,
-        category_id: categoryId,
-        amount: parseFloat(amount) || 0,
-        transaction_date: new Date(date).toISOString(),
-        description: description || undefined,
-      };
-      void payload;
-      toast.success(
-        `${tab === "income" ? "Income" : "Expense"} transaction created successfully!`,
-      );
-    }
+    try {
+      if (tab === "transfer") {
+        const cashOutCat = fundTransferCategories.find((c) =>
+          c.name.toLowerCase().includes("transfer"),
+        );
+        const cashInCat = fundTransferCategories.find((c) =>
+          c.name.toLowerCase().includes("transfer"),
+        );
+        const payload: CreateTransferPayload = {
+          from_wallet_id: fromWalletId,
+          to_wallet_id: toWalletId,
+          amount: parseFloat(amount) || 0,
+          admin_fee: parseFloat(adminFee) || 0,
+          cash_out_category_id: cashOutCat?.id ?? "",
+          cash_in_category_id: cashInCat?.id ?? "",
+          transaction_date: new Date(date).toISOString(),
+          description: description || undefined,
+        };
+        await createTransfer(token, payload);
+        toast.success("Transfer created successfully!");
+      } else {
+        const payload: CreateTransactionPayload = {
+          wallet_id: walletId,
+          category_id: categoryId,
+          amount: parseFloat(amount) || 0,
+          transaction_date: new Date(date).toISOString(),
+          description: description || undefined,
+        };
+        await createTransaction(token, payload);
+        toast.success(
+          `${tab === "income" ? "Income" : "Expense"} transaction created successfully!`,
+        );
+      }
 
-    setLoading(false);
-    onRefetch();
-    onClose();
-    resetForm();
+      onRefetch();
+      onClose();
+      resetForm();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Failed to create transaction";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {

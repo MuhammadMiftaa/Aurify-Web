@@ -62,7 +62,7 @@ export function AppSidebar() {
       >
         <img
           className="h-10 w-10"
-          src="/public/images/icons/logo.png"
+          src="/images/icons/logo.png"
           alt="Aurify Logo"
         />
         {!collapsed && (
