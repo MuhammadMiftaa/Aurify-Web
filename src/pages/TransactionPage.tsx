@@ -51,6 +51,23 @@ import { SearchableSelect } from "@/components/ui/SearchableSelect";
 // HELPERS
 // ════════════════════════════════════════════
 
+// Combine a "YYYY-MM-DD" date string with the current local time
+// so the timestamp reflects the chosen date + the moment the form is submitted.
+function combineDateWithNow(dateStr: string): string {
+  const now = new Date();
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const combined = new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  );
+  return combined.toISOString();
+}
+
 function fmtCurrency(n: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -479,7 +496,7 @@ function TransactionDetailModal({
         wallet_id: editWalletId,
         category_id: editCategoryId,
         amount: parseFloat(editAmount) || 0,
-        transaction_date: new Date(editDate).toISOString(),
+        transaction_date: combineDateWithNow(editDate),
         description: editDescription || undefined,
       };
       await updateTransactionAPI(token, transaction.id, payload);
@@ -1040,7 +1057,7 @@ function AddTransactionModal({
           admin_fee: parseFloat(adminFee) || 0,
           cash_out_category_id: cashOutCat?.id ?? "",
           cash_in_category_id: cashInCat?.id ?? "",
-          transaction_date: new Date(date).toISOString(),
+          transaction_date: combineDateWithNow(date),
           description: description || undefined,
         };
         await createTransfer(token, payload);
@@ -1050,7 +1067,7 @@ function AddTransactionModal({
           wallet_id: walletId,
           category_id: categoryId,
           amount: parseFloat(amount) || 0,
-          transaction_date: new Date(date).toISOString(),
+          transaction_date: combineDateWithNow(date),
           description: description || undefined,
         };
         await createTransaction(token, payload);

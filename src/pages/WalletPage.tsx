@@ -327,7 +327,7 @@ function WalletFormModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-(--border) bg-(--card)"
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-(--border) bg-(--card)"
         onClick={(e) => e.stopPropagation()}
         style={{
           boxShadow:

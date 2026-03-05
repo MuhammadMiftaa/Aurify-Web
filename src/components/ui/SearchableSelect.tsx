@@ -134,7 +134,7 @@ export function SearchableSelect({
         {/* Dropdown */}
         {isOpen && (
           <div
-            className="absolute left-0 right-0 z-60 mt-1 overflow-hidden rounded-lg border border-(--border) bg-(--card) shadow-lg"
+            className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border border-(--border) bg-(--card) shadow-lg"
             style={{
               boxShadow:
                 "0 10px 25px rgba(0,0,0,0.3), 0 0 20px rgba(218,165,32,0.05)",

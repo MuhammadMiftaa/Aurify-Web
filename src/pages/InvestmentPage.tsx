@@ -251,7 +251,7 @@ function InvestmentCard({
               WebkitTextFillColor: "transparent",
             }}
           >
-            {fmtCurrency(currentValue, true)}
+            {fmtCurrency(currentValue ?? 0, true)}
           </div>
         </div>
       </div>
@@ -386,7 +386,7 @@ function InvestmentDetailModal({
                 Current Value
               </div>
               <div className="text-sm font-bold text-gold-400">
-                {fmtCurrency(currentValue)}
+                {fmtCurrency(currentValue ?? 0)}
               </div>
             </div>
             <div className="rounded-xl border border-(--border) bg-(--secondary)/30 p-3">
@@ -1163,7 +1163,7 @@ export function InvestmentPage() {
             }
             subValue={
               summary.data
-                ? fmtPct(summary.data.total_profit_loss_pct)
+                ? fmtPct(summary.data.total_profit_loss_pct ?? 0)
                 : undefined
             }
             subColor={
