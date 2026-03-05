@@ -95,6 +95,7 @@ export function useCategories() {
         const flat: Category[] = [];
         if (Array.isArray(groups)) {
           for (const g of groups) {
+            if (!g.categories) continue;
             for (const c of g.categories) {
               flat.push({
                 id: c.id,

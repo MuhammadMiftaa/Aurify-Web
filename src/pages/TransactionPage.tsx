@@ -733,10 +733,12 @@ function TransactionDetailModal({
                 wallets.data?.map((w) => ({
                   value: w.id,
                   label: w.name,
+                  group: w.wallet_type_detail?.type,
                 })) ?? []
               }
               placeholder="Select wallet..."
               searchPlaceholder="Search wallet..."
+              grouped
               required
             />
 
@@ -1176,11 +1178,13 @@ function AddTransactionModal({
                   wallets.data?.map((w) => ({
                     value: w.id,
                     label: w.name,
+                    group: w.wallet_type_detail?.type,
                     disabled: w.id === toWalletId,
                   })) ?? []
                 }
                 placeholder="Select source wallet..."
                 searchPlaceholder="Search wallet..."
+                grouped
                 required
               />
 
@@ -1192,11 +1196,13 @@ function AddTransactionModal({
                   wallets.data?.map((w) => ({
                     value: w.id,
                     label: w.name,
+                    group: w.wallet_type_detail?.type,
                     disabled: w.id === fromWalletId,
                   })) ?? []
                 }
                 placeholder="Select destination wallet..."
                 searchPlaceholder="Search wallet..."
+                grouped
                 required
               />
             </>
@@ -1210,10 +1216,12 @@ function AddTransactionModal({
                   wallets.data?.map((w) => ({
                     value: w.id,
                     label: w.name,
+                    group: w.wallet_type_detail?.type,
                   })) ?? []
                 }
                 placeholder="Select wallet..."
                 searchPlaceholder="Search wallet..."
+                grouped
                 required
               />
 

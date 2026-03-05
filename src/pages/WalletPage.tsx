@@ -138,7 +138,7 @@ function WalletCard({
             >
               <Edit3 size={14} />
             </button>
-            {wallet.balance === 0 && (
+            {(!wallet.balance || wallet.balance === 0) && (
               <button
                 onClick={() => onDelete(wallet)}
                 className="rounded-lg p-1.5 text-(--muted-foreground) transition hover:bg-rose-500/10 hover:text-rose-400"
@@ -164,7 +164,7 @@ function WalletCard({
               backgroundClip: "text",
             }}
           >
-            {fmtCurrency(wallet.balance)}
+            {fmtCurrency(wallet.balance ?? 0)}
           </div>
         </div>
 
@@ -327,7 +327,7 @@ function WalletFormModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-(--border) bg-(--card)"
+        className="w-full max-w-md rounded-2xl border border-(--border) bg-(--card)"
         onClick={(e) => e.stopPropagation()}
         style={{
           boxShadow:
@@ -363,10 +363,12 @@ function WalletFormModal({
             onChange={setWalletTypeId}
             options={walletTypes.map((wt) => ({
               value: wt.id,
-              label: `${wt.name} (${wt.type})`,
+              label: wt.name,
+              group: wt.type,
             }))}
             placeholder="Select type..."
             searchPlaceholder="Search wallet type..."
+            grouped
             required
           />
 
