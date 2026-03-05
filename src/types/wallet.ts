@@ -20,7 +20,7 @@ export interface Wallet {
   name: string;
   balance: number;
   number: string;
-  wallet_type?: WalletType;
+  wallet_type_detail?: WalletType;
   transaction_count?: number;
 }
 

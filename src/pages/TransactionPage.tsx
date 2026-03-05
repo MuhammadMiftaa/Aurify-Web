@@ -1682,7 +1682,7 @@ export function TransactionPage() {
                       ))}
                     </tr>
                   ))
-                ) : txnList.data?.transactions.length === 0 ? (
+                ) : txnList.data?.transactions?.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-16 text-center">
                       <ArrowLeftRight
@@ -1700,7 +1700,7 @@ export function TransactionPage() {
                     </td>
                   </tr>
                 ) : (
-                  txnList.data?.transactions.map((txn) => (
+                  txnList.data?.transactions?.map((txn) => (
                     <TransactionRow
                       key={txn.id}
                       transaction={txn}
@@ -1729,7 +1729,7 @@ export function TransactionPage() {
             Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))
-          ) : txnList.data?.transactions.length === 0 ? (
+          ) : txnList.data?.transactions?.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ArrowLeftRight
                 size={32}
@@ -1745,7 +1745,7 @@ export function TransactionPage() {
               </div>
             </div>
           ) : (
-            txnList.data?.transactions.map((txn) => (
+            txnList.data?.transactions?.map((txn) => (
               <TransactionCard
                 key={txn.id}
                 transaction={txn}

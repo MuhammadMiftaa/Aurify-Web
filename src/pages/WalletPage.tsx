@@ -123,8 +123,8 @@ function WalletCard({
                 {wallet.name}
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-(--muted-foreground)">
-                {getWalletTypeIcon(wallet.wallet_type?.type ?? "bank")}
-                <span>{wallet.wallet_type?.name ?? "Unknown"}</span>
+                {getWalletTypeIcon(wallet.wallet_type_detail?.type ?? "bank")}
+                <span>{wallet.wallet_type_detail?.name ?? "Unknown"}</span>
               </div>
             </div>
           </div>
@@ -510,13 +510,13 @@ export function WalletPage() {
         (w) =>
           w.name.toLowerCase().includes(q) ||
           w.number.toLowerCase().includes(q) ||
-          w.wallet_type?.name.toLowerCase().includes(q),
+          w.wallet_type_detail?.name.toLowerCase().includes(q),
       );
     }
 
     // Filter by wallet type category
     if (filterType) {
-      list = list.filter((w) => w.wallet_type?.type === filterType);
+      list = list.filter((w) => w.wallet_type_detail?.type === filterType);
     }
 
     return list;
