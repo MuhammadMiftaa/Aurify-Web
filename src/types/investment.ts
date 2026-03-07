@@ -60,6 +60,7 @@ export interface CreateInvestmentPayload {
   amount: number;
   date: string;
   description?: string;
+  wallet_id: string;
 }
 
 export interface SellInvestmentPayload {
@@ -68,6 +69,7 @@ export interface SellInvestmentPayload {
   amount: number;
   date: string;
   description?: string;
+  wallet_id: string;
 }
 
 export interface InvestmentListParams {

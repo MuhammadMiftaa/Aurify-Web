@@ -37,6 +37,7 @@ import {
   useInvestmentSummary,
   useAssetCodes,
 } from "@/hooks/useInvestment";
+import { useWalletList } from "@/hooks/useWallet";
 import {
   createInvestment as createInvestmentAPI,
   sellInvestment as sellInvestmentAPI,
@@ -531,7 +532,9 @@ function CreateInvestmentModal({
 }) {
   const { token } = useAuth();
   const assetCodes = useAssetCodes();
+  const wallets = useWalletList();
   const [code, setCode] = useState("");
+  const [walletId, setWalletId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -542,6 +545,7 @@ function CreateInvestmentModal({
   useEffect(() => {
     if (!open) {
       setCode("");
+      setWalletId("");
       setQuantity("");
       setAmount("");
       setDate(new Date().toISOString().slice(0, 10));
@@ -571,6 +575,10 @@ function CreateInvestmentModal({
       toast.error("Quantity and amount must be greater than 0");
       return;
     }
+    if (!walletId) {
+      toast.error("Please select a wallet");
+      return;
+    }
     setLoading(true);
     const payload: CreateInvestmentPayload = {
       code,
@@ -578,6 +586,7 @@ function CreateInvestmentModal({
       amount: amt,
       date: new Date(date).toISOString(),
       description: description || undefined,
+      wallet_id: walletId,
     };
     try {
       await createInvestmentAPI(token!, payload);
@@ -642,6 +651,21 @@ function CreateInvestmentModal({
               /{selectedAsset.unit ?? "unit"}
             </div>
           )}
+
+          <SearchableSelect
+            label="Wallet"
+            value={walletId}
+            onChange={setWalletId}
+            options={
+              wallets.data?.map((w) => ({
+                value: w.id,
+                label: w.name,
+              })) ?? []
+            }
+            placeholder="Select wallet..."
+            searchPlaceholder="Search wallet..."
+            required
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -763,6 +787,8 @@ function SellInvestmentModal({
   onRefetch: () => void;
 }) {
   const { token } = useAuth();
+  const wallets = useWalletList();
+  const [walletId, setWalletId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -771,6 +797,7 @@ function SellInvestmentModal({
 
   useEffect(() => {
     if (!investment) {
+      setWalletId("");
       setQuantity("");
       setAmount("");
       setDate(new Date().toISOString().slice(0, 10));
@@ -816,6 +843,10 @@ function SellInvestmentModal({
       toast.error("Quantity and amount must be greater than 0");
       return;
     }
+    if (!walletId) {
+      toast.error("Please select a wallet");
+      return;
+    }
     setLoading(true);
     const payload: SellInvestmentPayload = {
       asset_code: investment.code,
@@ -823,6 +854,7 @@ function SellInvestmentModal({
       amount: sellAmt,
       date: new Date(date).toISOString(),
       description: description || undefined,
+      wallet_id: walletId,
     };
     try {
       await sellInvestmentAPI(token!, payload);
@@ -887,6 +919,21 @@ function SellInvestmentModal({
               </span>
             </div>
           </div>
+
+          <SearchableSelect
+            label="Wallet"
+            value={walletId}
+            onChange={setWalletId}
+            options={
+              wallets.data?.map((w) => ({
+                value: w.id,
+                label: w.name,
+              })) ?? []
+            }
+            placeholder="Select wallet..."
+            searchPlaceholder="Search wallet..."
+            required
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <Input
