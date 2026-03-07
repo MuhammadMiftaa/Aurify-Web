@@ -5,11 +5,8 @@ import type {
   InvestmentSummary,
   AssetCode,
 } from "@/types/investment";
-import {
-  fetchInvestments,
-  fetchInvestmentSummary,
-  fetchAssetCodes,
-} from "@/lib/investment-api";
+import { fetchInvestments, fetchAssetCodes } from "@/lib/investment-api";
+import { fetchFinancialSummary } from "@/lib/dashboard-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDemo } from "@/contexts/DemoContext";
 import {
@@ -106,12 +103,41 @@ export function useInvestmentSummary() {
     setState((s) => ({ ...s, loading: true, error: null }));
 
     try {
-      const result = await fetchInvestmentSummary(token);
-      setState({
-        data: result.data as InvestmentSummary,
-        loading: false,
-        error: null,
-      });
+      const result = await fetchFinancialSummary(token, {});
+      const summaries = result.data;
+      // Take the latest period's investment_summary
+      const latest =
+        Array.isArray(summaries) && summaries.length > 0
+          ? summaries[summaries.length - 1]
+          : null;
+      const inv = latest?.investment_summary;
+
+      if (inv) {
+        const mapped: InvestmentSummary = {
+          total_investments: inv.active_positions + (inv.sell_count ?? 0),
+          total_invested: inv.total_invested,
+          total_current_value: inv.total_current_valuation ?? 0,
+          total_profit_loss: inv.unrealized_gain ?? 0,
+          total_profit_loss_pct: inv.investment_growth_pct,
+          total_sold_amount: inv.total_sold_amount ?? 0,
+          total_realized_gain: inv.realized_gain ?? 0,
+        };
+        setState({ data: mapped, loading: false, error: null });
+      } else {
+        setState({
+          data: {
+            total_investments: 0,
+            total_invested: 0,
+            total_current_value: 0,
+            total_profit_loss: 0,
+            total_profit_loss_pct: 0,
+            total_sold_amount: 0,
+            total_realized_gain: 0,
+          },
+          loading: false,
+          error: null,
+        });
+      }
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "message" in err
