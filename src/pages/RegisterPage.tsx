@@ -109,9 +109,9 @@ export function RegisterPage() {
 
       <Divider text="or continue with" />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <OAuthButton provider="google" onClick={() => handleOAuth("google")} />
-        <OAuthButton provider="github" onClick={() => handleOAuth("github")} />
+        {/* <OAuthButton provider="github" onClick={() => handleOAuth("github")} /> */}
         <OAuthButton
           provider="microsoft"
           onClick={() => handleOAuth("microsoft")}

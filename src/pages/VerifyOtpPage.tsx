@@ -1,8 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/FormElements";
-import { verifyOtpApi } from "@/lib/api";
+import {
+  verifyOtpApi,
+  registerApi,
+  requestSetPasswordApi,
+} from "@/lib/api";
 import type { ApiError } from "@/lib/api";
 import { resolveErrorMessage, SUCCESS_MESSAGES } from "@/lib/messages";
 import toast from "react-hot-toast";
@@ -22,6 +26,8 @@ export function VerifyOtpPage() {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Redirect if no email in state
@@ -30,6 +36,40 @@ export function VerifyOtpPage() {
       navigate("/login", { replace: true });
     }
   }, [email, navigate]);
+
+  // Resend cooldown countdown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResendOtp = useCallback(async () => {
+    if (resendCooldown > 0 || isResending) return;
+
+    setIsResending(true);
+    try {
+      if (flow === "register") {
+        await registerApi(email);
+      } else {
+        // "forgot-password" and "set-password" both use requestSetPassword
+        await requestSetPasswordApi(email);
+      }
+      toast.success(SUCCESS_MESSAGES.otpSent);
+      setResendCooldown(60);
+      // Reset OTP inputs
+      setOtp(Array(OTP_LENGTH).fill(""));
+      setError("");
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(resolveErrorMessage(apiErr.message, "Failed to resend code"));
+    } finally {
+      setIsResending(false);
+    }
+  }, [email, flow, resendCooldown, isResending, navigate]);
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -144,16 +184,20 @@ export function VerifyOtpPage() {
 
       <p className="mt-6 text-center text-sm text-(--muted-foreground)">
         Didn&apos;t receive the code?{" "}
-        <button
-          type="button"
-          className="font-medium text-(--primary) hover:underline"
-          onClick={() => {
-            toast.success("Please go back and re-submit your email");
-            navigate(-1);
-          }}
-        >
-          Go back
-        </button>
+        {resendCooldown > 0 ? (
+          <span className="font-medium text-(--muted-foreground)">
+            Resend in {resendCooldown}s
+          </span>
+        ) : (
+          <button
+            type="button"
+            disabled={isResending}
+            className="font-medium text-(--primary) hover:underline disabled:opacity-50"
+            onClick={handleResendOtp}
+          >
+            {isResending ? "Sending…" : "Resend code"}
+          </button>
+        )}
       </p>
     </AuthLayout>
   );

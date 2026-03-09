@@ -181,15 +181,15 @@ export function LoginPage() {
 
         <Divider text="or continue with" />
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <OAuthButton
             provider="google"
             onClick={() => handleOAuth("google")}
           />
-          <OAuthButton
+          {/* <OAuthButton
             provider="github"
             onClick={() => handleOAuth("github")}
-          />
+          /> */}
           <OAuthButton
             provider="microsoft"
             onClick={() => handleOAuth("microsoft")}
@@ -218,7 +218,7 @@ export function LoginPage() {
 
       {/* Demo mode button — portal to escape AuthLayout's relative container */}
       {ReactDOM.createPortal(
-        <div className="fixed bottom-2 md:bottom-6 md:right-6 md:-translate-x-0 md:left-auto left-1/2 -translate-x-1/2 z-50">
+        <div className="fixed bottom-2 md:bottom-6 md:right-6 md:translate-x-0 md:left-auto left-1/2 -translate-x-1/2 z-50">
           <button
             type="button"
             onClick={() => {
