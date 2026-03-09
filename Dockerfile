@@ -10,8 +10,8 @@ COPY . ./
 RUN bun run build
 
 # ─── Nginx dengan modul Brotli ────────────────────────────────────────────────
-# fholger/nginx-brotli = nginx:alpine + ngx_brotli module (pre-built)
-FROM fholger/nginx-brotli:latest AS runner
+# fholzer/nginx-brotli = nginx:alpine + ngx_brotli module (pre-built)
+FROM fholzer/nginx-brotli:latest AS runner
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
