@@ -78,6 +78,7 @@ export interface CreateTransactionPayload {
   amount: number;
   transaction_date: string;
   description?: string;
+  attachments?: string[]; // base64 encoded images
 }
 
 export interface UpdateTransactionPayload {
@@ -86,6 +87,12 @@ export interface UpdateTransactionPayload {
   amount?: number;
   transaction_date?: string;
   description?: string;
+  attachment_actions?: UpdateAttachmentAction[];
+}
+
+export interface UpdateAttachmentAction {
+  status: "create" | "delete";
+  files: string[]; // base64 for "create", attachment IDs for "delete"
 }
 
 export interface CreateTransferPayload {

@@ -74,6 +74,21 @@ function combineDateWithNow(dateStr: string): string {
   return combined.toISOString();
 }
 
+/** Convert a File to a raw base64 string (without data URI prefix). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the "data:<mime>;base64," prefix
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function fmtCurrency(n: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -505,12 +520,33 @@ function TransactionDetailModal({
     if (!transaction || !token) return;
     setLoading(true);
     try {
+      // Build attachment actions from new/removed attachments
+      const attachmentActions: UpdateTransactionPayload["attachment_actions"] =
+        [];
+
+      if (newAttachments.length > 0) {
+        const base64Files = await Promise.all(
+          newAttachments.map((f) => fileToBase64(f)),
+        );
+        attachmentActions.push({ status: "create", files: base64Files });
+      }
+
+      if (removedAttachmentIds.length > 0) {
+        attachmentActions.push({
+          status: "delete",
+          files: removedAttachmentIds,
+        });
+      }
+
       const payload: UpdateTransactionPayload = {
         wallet_id: editWalletId,
         category_id: editCategoryId,
         amount: parseFloat(editAmount) || 0,
         transaction_date: combineDateWithNow(editDate),
         description: editDescription || undefined,
+        ...(attachmentActions.length > 0 && {
+          attachment_actions: attachmentActions,
+        }),
       };
       await updateTransactionAPI(token, transaction.id, payload);
       toast.success("Transaction updated successfully!");
@@ -710,8 +746,8 @@ function TransactionDetailModal({
                       ) : (
                         <Paperclip size={12} className="text-gold-400" />
                       )}
-                      <span className="max-w-32 truncate">
-                        {att.format ?? "file"}
+                      <span className="max-w-80 truncate">
+                        {att.image ?? "file"}
                       </span>
                       {att.size ? (
                         <span className="text-(--muted-foreground)">
@@ -854,7 +890,9 @@ function TransactionDetailModal({
                             className="text-gold-400 shrink-0"
                           />
                         )}
-                        <span className="truncate">{att.format ?? "file"}</span>
+                        <span className="w-max truncate">
+                          {att.image ?? "file"}
+                        </span>
                         {att.size ? (
                           <span className="text-(--muted-foreground) shrink-0">
                             · {Math.round(att.size / 1024)}KB
@@ -1085,12 +1123,20 @@ function AddTransactionModal({
         await createTransfer(token, payload);
         toast.success("Transfer created successfully!");
       } else {
+        // Convert attachment file to base64 if present
+        const attachments: string[] = [];
+        if (attachment) {
+          const base64 = await fileToBase64(attachment);
+          attachments.push(base64);
+        }
+
         const payload: CreateTransactionPayload = {
           wallet_id: walletId,
           category_id: categoryId,
           amount: parseFloat(amount) || 0,
           transaction_date: combineDateWithNow(date),
           description: description || undefined,
+          ...(attachments.length > 0 && { attachments }),
         };
         await createTransaction(token, payload);
         toast.success(
