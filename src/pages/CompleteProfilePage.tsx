@@ -6,10 +6,12 @@ import { completeProfileApi } from "@/lib/api";
 import type { ApiError } from "@/lib/api";
 import { resolveErrorMessage, SUCCESS_MESSAGES } from "@/lib/messages";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function CompleteProfilePage() {
   const location = useLocation();
   const navigate = useNavigate();
+    const { setToken } = useAuth();
   const state = location.state as { email?: string; tempToken?: string } | null;
   const email = state?.email ?? "";
   const tempToken = state?.tempToken ?? "";
@@ -49,9 +51,10 @@ export function CompleteProfilePage() {
 
     setIsLoading(true);
     try {
-      await completeProfileApi({ name, password, confirmPassword }, tempToken);
+      const res = await completeProfileApi({ name, password, confirmPassword }, tempToken);
+      setToken(res.data.token);
       toast.success(SUCCESS_MESSAGES.accountCreated);
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       const apiErr = err as ApiError;
       toast.error(resolveErrorMessage(apiErr.message));

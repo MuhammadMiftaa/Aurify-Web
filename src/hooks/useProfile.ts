@@ -26,7 +26,7 @@ const DUMMY_PROFILE: Profile = {
 };
 
 export function useProfile() {
-  const { token } = useAuth();
+  const { token, refreshCachedProfile } = useAuth();
   const { isDemo } = useDemo();
   const [state, setState] = useState<AsyncState<Profile>>({
     data: null,
@@ -72,6 +72,8 @@ export function useProfile() {
       try {
         const res = await updateProfile(token, { fullname });
         setState({ data: res.data, loading: false, error: null });
+        // Update cached profile in AuthContext
+        refreshCachedProfile();
         return res.data;
       } catch (err: unknown) {
         const error = err as { message: string };
@@ -79,7 +81,7 @@ export function useProfile() {
         throw err;
       }
     },
-    [token, isDemo],
+    [token, isDemo, refreshCachedProfile],
   );
 
   const uploadPhoto = useCallback(
@@ -112,6 +114,8 @@ export function useProfile() {
         if (res.data.success) {
           // Refetch to get updated profile
           refetch();
+          // Update cached profile in AuthContext
+          refreshCachedProfile();
         }
         return res.data;
       } catch (err: unknown) {
@@ -120,7 +124,7 @@ export function useProfile() {
         throw err;
       }
     },
-    [token, isDemo, refetch],
+    [token, isDemo, refetch, refreshCachedProfile],
   );
 
   const removePhoto = useCallback(async () => {
@@ -139,12 +143,14 @@ export function useProfile() {
       await deleteProfilePhoto(token);
       // Refetch to get updated profile
       refetch();
+      // Update cached profile in AuthContext
+      refreshCachedProfile();
     } catch (err: unknown) {
       const error = err as { message: string };
       setState((s) => ({ ...s, loading: false, error: error.message }));
       throw err;
     }
-  }, [token, isDemo, refetch]);
+  }, [token, isDemo, refetch, refreshCachedProfile]);
 
   return { ...state, refetch, update, uploadPhoto, removePhoto };
 }

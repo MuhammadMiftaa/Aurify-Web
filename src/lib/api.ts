@@ -71,11 +71,7 @@ export async function completeProfileApi(
   data: { name: string; password: string; confirmPassword: string },
   tempToken: string,
 ) {
-  return apiCall<{
-    id: string;
-    name: string;
-    email: string;
-  }>(`/auth/complete-profile?tempToken=${encodeURIComponent(tempToken)}`, {
+  return apiCall<{ token: string }>(`/auth/complete-profile?tempToken=${encodeURIComponent(tempToken)}`, {
     method: "POST",
     body: JSON.stringify(data),
   });

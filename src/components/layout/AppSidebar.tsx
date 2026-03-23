@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
 
 interface NavItem {
   icon: React.ElementType;
@@ -30,16 +29,15 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 export function AppSidebar() {
-  const { user, logout } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, logout, cachedProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Use profile fullname initials if available, otherwise fallback to email
-  const initials = profile?.fullname
-    ? profile.fullname
+  // Use cached profile fullname initials if available, otherwise fallback to email
+  const initials = cachedProfile?.fullname
+    ? cachedProfile.fullname
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -49,8 +47,8 @@ export function AppSidebar() {
       ? user.email.slice(0, 2).toUpperCase()
       : "AU";
 
-  // Profile photo URL
-  const photoUrl = profile?.photo_url || "";
+  // Profile photo URL from cached profile
+  const photoUrl = cachedProfile?.photo_url || "";
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -212,7 +210,7 @@ export function AppSidebar() {
                     backgroundClip: "text",
                   }}
                 >
-                  {profile?.fullname ||
+                  {cachedProfile?.fullname ||
                     user?.email?.split("@")[0] ||
                     "User"}
                 </div>
