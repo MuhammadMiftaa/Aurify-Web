@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input, Button } from "@/components/ui/FormElements";
@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export function CompleteProfilePage() {
   const location = useLocation();
   const navigate = useNavigate();
-    const { setToken } = useAuth();
+  const { setToken } = useAuth();
   const state = location.state as { email?: string; tempToken?: string } | null;
   const email = state?.email ?? "";
   const tempToken = state?.tempToken ?? "";
@@ -28,11 +28,19 @@ export function CompleteProfilePage() {
     confirmPassword?: string;
   }>({});
 
+  // Ref for auto-focus
+  const nameRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (!email || !tempToken) {
       navigate("/register", { replace: true });
     }
   }, [email, tempToken, navigate]);
+
+  // Auto-focus name input on mount
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -51,7 +59,10 @@ export function CompleteProfilePage() {
 
     setIsLoading(true);
     try {
-      const res = await completeProfileApi({ name, password, confirmPassword }, tempToken);
+      const res = await completeProfileApi(
+        { name, password, confirmPassword },
+        tempToken,
+      );
       setToken(res.data.token);
       toast.success(SUCCESS_MESSAGES.accountCreated);
       navigate("/");
@@ -85,6 +96,7 @@ export function CompleteProfilePage() {
           onChange={(e) => setName(e.target.value)}
           error={errors.name}
           autoComplete="name"
+          ref={nameRef}
         />
 
         <div className="relative">

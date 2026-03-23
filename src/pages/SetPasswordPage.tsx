@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input, Button } from "@/components/ui/FormElements";
@@ -31,11 +31,19 @@ export function SetPasswordPage() {
     confirmPassword?: string;
   }>({});
 
+  // Ref for auto-focus
+  const passwordRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (!email || !tempToken) {
       navigate("/forgot-password", { replace: true });
     }
   }, [email, tempToken, navigate]);
+
+  // Auto-focus password input on mount
+  useEffect(() => {
+    passwordRef.current?.focus();
+  }, []);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -93,6 +101,7 @@ export function SetPasswordPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
             autoComplete="new-password"
+            ref={passwordRef}
           />
           <button
             type="button"

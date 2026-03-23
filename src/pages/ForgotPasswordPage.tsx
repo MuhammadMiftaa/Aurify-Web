@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input, Button } from "@/components/ui/FormElements";
@@ -12,6 +12,14 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string }>({});
+
+  // Ref for auto-focus
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus email input on mount
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -60,6 +68,7 @@ export function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
           autoComplete="email"
+          ref={emailRef}
         />
 
         <Button type="submit" className="w-full" isLoading={isLoading}>

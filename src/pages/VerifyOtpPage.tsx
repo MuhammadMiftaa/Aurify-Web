@@ -1,12 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/FormElements";
-import {
-  verifyOtpApi,
-  registerApi,
-  requestSetPasswordApi,
-} from "@/lib/api";
+import { verifyOtpApi, registerApi, requestSetPasswordApi } from "@/lib/api";
 import type { ApiError } from "@/lib/api";
 import { resolveErrorMessage, SUCCESS_MESSAGES } from "@/lib/messages";
 import toast from "react-hot-toast";
@@ -69,7 +66,42 @@ export function VerifyOtpPage() {
     } finally {
       setIsResending(false);
     }
-  }, [email, flow, resendCooldown, isResending, navigate]);
+  }, [email, flow, resendCooldown, isResending]);
+
+  // Check if all OTP digits are filled
+  const isOtpComplete = otp.every((digit) => digit !== "");
+
+  // Submit OTP verification
+  const submitOtp = useCallback(
+    async (otpCode: string) => {
+      if (otpCode.length < OTP_LENGTH || isLoading) return;
+
+      setIsLoading(true);
+      try {
+        const res = await verifyOtpApi(email, otpCode);
+        toast.success(SUCCESS_MESSAGES.otpVerified);
+
+        if (flow === "register") {
+          navigate("/complete-profile", {
+            state: { email, tempToken: res.data.tempToken },
+          });
+        } else {
+          // both "forgot-password" and "set-password" go to set-password page
+          navigate("/set-password", {
+            state: { email, tempToken: res.data.tempToken, flow },
+          });
+        }
+      } catch (err) {
+        const apiErr = err as ApiError;
+        const msg = resolveErrorMessage(apiErr.message, "Verification failed");
+        setError(msg);
+        toast.error(msg);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [email, flow, isLoading, navigate],
+  );
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -77,8 +109,17 @@ export function VerifyOtpPage() {
     next[index] = value.slice(-1);
     setOtp(next);
     setError("");
+
     if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when last digit is entered
+    if (value && index === OTP_LENGTH - 1) {
+      const completeOtp = next.join("");
+      if (completeOtp.length === OTP_LENGTH) {
+        submitOtp(completeOtp);
+      }
     }
   };
 
@@ -100,6 +141,8 @@ export function VerifyOtpPage() {
     if (pasted.length === OTP_LENGTH) {
       setOtp(pasted.split(""));
       inputRefs.current[OTP_LENGTH - 1]?.focus();
+      // Auto-submit on paste complete OTP
+      submitOtp(pasted);
     }
   };
 
@@ -110,31 +153,24 @@ export function VerifyOtpPage() {
       setError("Please enter the complete code");
       return;
     }
+    submitOtp(code);
+  };
 
-    setIsLoading(true);
-    try {
-      const res = await verifyOtpApi(email, code);
-      toast.success(SUCCESS_MESSAGES.otpVerified);
-
-      if (flow === "register") {
-        navigate("/complete-profile", {
-          state: { email, tempToken: res.data.tempToken },
-        });
-      } else {
-        // both "forgot-password" and "set-password" go to set-password page
-        navigate("/set-password", {
-          state: { email, tempToken: res.data.tempToken, flow },
-        });
-      }
-    } catch (err) {
-      const apiErr = err as ApiError;
-      const msg = resolveErrorMessage(apiErr.message, "Verification failed");
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
+  // Get the back link based on the flow
+  const getBackLink = () => {
+    switch (flow) {
+      case "register":
+        return { to: "/register", label: "Change email" };
+      case "forgot-password":
+        return { to: "/forgot-password", label: "Change email" };
+      case "set-password":
+        return { to: "/login", label: "Back to login" };
+      default:
+        return { to: "/login", label: "Back to login" };
     }
   };
+
+  const backLink = getBackLink();
 
   return (
     <AuthLayout>
@@ -177,28 +213,45 @@ export function VerifyOtpPage() {
           <p className="text-center text-xs text-(--destructive)">{error}</p>
         )}
 
-        <Button type="submit" className="w-full" isLoading={isLoading}>
+        <Button
+          type="submit"
+          className="w-full"
+          isLoading={isLoading}
+          disabled={!isOtpComplete || isLoading}
+        >
           Verify
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-(--muted-foreground)">
-        Didn&apos;t receive the code?{" "}
-        {resendCooldown > 0 ? (
-          <span className="font-medium text-(--muted-foreground)">
-            Resend in {resendCooldown}s
-          </span>
-        ) : (
-          <button
-            type="button"
-            disabled={isResending}
-            className="font-medium text-(--primary) hover:underline disabled:opacity-50"
-            onClick={handleResendOtp}
+      <div className="mt-6 space-y-3">
+        <p className="text-center text-sm text-(--muted-foreground)">
+          Didn&apos;t receive the code?{" "}
+          {resendCooldown > 0 ? (
+            <span className="font-medium text-(--muted-foreground)">
+              Resend in {resendCooldown}s
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={isResending}
+              className="font-medium text-(--primary) hover:underline disabled:opacity-50"
+              onClick={handleResendOtp}
+            >
+              {isResending ? "Sending…" : "Resend code"}
+            </button>
+          )}
+        </p>
+
+        <p className="text-center">
+          <Link
+            to={backLink.to}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:text-(--foreground)"
           >
-            {isResending ? "Sending…" : "Resend code"}
-          </button>
-        )}
-      </p>
+            <ArrowLeft size={14} />
+            {backLink.label}
+          </Link>
+        </p>
+      </div>
     </AuthLayout>
   );
 }

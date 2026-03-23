@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import {
@@ -24,8 +24,16 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string }>({});
 
+  // Ref for auto-focus
+  const emailRef = useRef<HTMLInputElement>(null);
+
   // 409 modal state
   const [showOAuthModal, setShowOAuthModal] = useState(false);
+
+  // Auto-focus email input on mount
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -61,7 +69,7 @@ export function RegisterPage() {
   };
 
   const handleSetPasswordFromModal = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       await requestSetPasswordApi(email);
       toast.success(SUCCESS_MESSAGES.otpSent);
@@ -100,6 +108,7 @@ export function RegisterPage() {
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
           autoComplete="email"
+          ref={emailRef}
         />
 
         <Button type="submit" className="w-full" isLoading={isLoading}>
