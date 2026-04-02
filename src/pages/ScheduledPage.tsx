@@ -159,9 +159,7 @@ function CreateScheduleForm({ onClose }: { onClose: () => void }) {
   const [jobType, setJobType] = useState<"transaction" | "investment">(
     "transaction",
   );
-  const [scheduleType, setScheduleType] = useState<"once" | "repeat">(
-    "repeat",
-  );
+  const [scheduleType, setScheduleType] = useState<"once" | "repeat">("repeat");
   const categories = getDummyCategoryBreakdown("expense");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -386,7 +384,8 @@ function ConfirmDialog({
     toast("Demo mode — data is read-only", { icon: "🔒" });
   };
 
-  const icon = variant === "danger" ? "🗑️" : variant === "warning" ? "⏸️" : "▶️";
+  const icon =
+    variant === "danger" ? "🗑️" : variant === "warning" ? "⏸️" : "▶️";
 
   return (
     <div className="flex flex-col gap-4 text-center">
@@ -496,10 +495,7 @@ function ExecutionLogTable({ logs }: { logs: ScheduledJobLog[] }) {
             className="flex items-center gap-3 px-3 py-2.5 sm:px-4"
           >
             {log.status === "success" ? (
-              <CheckCircle2
-                size={14}
-                className="shrink-0 text-emerald-500"
-              />
+              <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
             ) : (
               <XCircle size={14} className="shrink-0 text-rose-500" />
             )}
@@ -516,9 +512,7 @@ function ExecutionLogTable({ logs }: { logs: ScheduledJobLog[] }) {
             <span
               className={cn(
                 "shrink-0 text-[10px] font-semibold",
-                log.status === "success"
-                  ? "text-emerald-500"
-                  : "text-rose-500",
+                log.status === "success" ? "text-emerald-500" : "text-rose-500",
               )}
             >
               {log.status === "success" ? "Success" : "Failed"}
@@ -554,35 +548,38 @@ function ScheduleCard({
   return (
     <div
       className={cn(
-        "group rounded-xl border bg-(--card) overflow-hidden transition",
+        "group relative rounded-xl overflow-hidden transition-all duration-300",
         job.status === "active"
-          ? "border-(--border) hover:border-gold-400/20"
-          : "border-(--border) opacity-85 hover:opacity-100",
+          ? "hover:shadow-lg hover:shadow-emerald-500/10"
+          : job.status === "paused"
+            ? "opacity-90 hover:opacity-100"
+            : "opacity-75 hover:opacity-90",
       )}
+      style={{
+        background:
+          job.status === "active"
+            ? "linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 15%, var(--card) 30%)"
+            : job.status === "paused"
+              ? "linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.03) 15%, var(--card) 30%)"
+              : "linear-gradient(180deg, rgba(120, 120, 120, 0.05) 0%, rgba(120, 120, 120, 0.02) 15%, var(--card) 30%)",
+        border:
+          job.status === "active"
+            ? "1px solid rgba(16, 185, 129, 0.3)"
+            : job.status === "paused"
+              ? "1px solid rgba(245, 158, 11, 0.3)"
+              : "1px solid var(--border)",
+      }}
     >
-      {/* Status bar */}
-      <div
-        className="h-0.5"
-        style={{
-          background:
-            job.status === "active"
-              ? "#10b981"
-              : job.status === "paused"
-                ? "#f59e0b"
-                : "transparent",
-        }}
-      />
-
       <div className="p-3.5 sm:p-4">
         {/* Row 1: Title + Amount */}
         <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
           <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
             <div
               className={cn(
-                "mt-0.5 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition",
+                "mt-0.5 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105",
                 job.job_type === "transaction"
-                  ? "bg-blue-500/5 border-blue-500/20"
-                  : "bg-gold-400/5 border-gold-400/20",
+                  ? "bg-linear-to-br from-blue-500/15 to-indigo-500/10 border-blue-500/30 shadow-sm shadow-blue-500/10"
+                  : "bg-linear-to-br from-gold-400/15 to-amber-500/10 border-gold-400/30 shadow-sm shadow-gold-400/10",
               )}
             >
               {job.job_type === "transaction" ? (
@@ -606,16 +603,20 @@ function ScheduleCard({
                   )}
                 >
                   <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      statusStyle.dot,
-                    )}
+                    className={cn("h-1.5 w-1.5 rounded-full", statusStyle.dot)}
                   />
                   {statusStyle.label}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-(--border) bg-(--secondary)/30 px-2 py-0.5 text-[10px] font-medium text-(--muted-foreground)">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                    job.schedule_type === "repeat"
+                      ? "border-violet-500/30 bg-linear-to-r from-violet-500/15 to-purple-500/10 text-violet-400"
+                      : "border-cyan-500/30 bg-linear-to-r from-cyan-500/15 to-blue-500/10 text-cyan-400",
+                  )}
+                >
                   {job.schedule_type === "repeat" ? (
-                    <Repeat size={9} />
+                    <Repeat size={9} className="animate-spin-slow" />
                   ) : (
                     <Zap size={9} />
                   )}
@@ -626,10 +627,17 @@ function ScheduleCard({
           </div>
 
           <div className="text-right shrink-0">
-            <div className="font-mono text-xs sm:text-sm font-bold text-(--foreground)">
+            <div className="font-mono text-xs sm:text-sm font-bold text-(--foreground) group-hover:text-gold-300 transition-colors">
               {fmtShortCurrency(job.amount)}
             </div>
-            <div className="text-[10px] text-(--muted-foreground)">
+            <div
+              className={cn(
+                "text-[10px] font-medium",
+                job.schedule_type === "repeat"
+                  ? "text-violet-400/70"
+                  : "text-cyan-400/70",
+              )}
+            >
               {job.repeat_interval
                 ? `/${job.repeat_interval.slice(0, 2)}`
                 : "once"}
@@ -638,77 +646,78 @@ function ScheduleCard({
         </div>
 
         {/* Row 2: Detail pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:ml-[48px]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:ml-12">
           {job.repeat_detail && (
-            <div className="flex items-center gap-1.5 rounded-lg bg-(--secondary)/30 px-2 sm:px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-amber-500/10 to-orange-500/5 border border-amber-500/20 px-2 sm:px-2.5 py-1.5 group/pill transition-all hover:border-amber-500/40">
               <Timer
                 size={11}
-                className="shrink-0 text-(--muted-foreground)"
+                className="shrink-0 text-amber-400 group-hover/pill:scale-110 transition-transform"
               />
-              <span className="text-[10px] sm:text-[11px] text-(--foreground) truncate">
+              <span className="text-[10px] sm:text-[11px] text-amber-300/90 truncate font-medium">
                 {job.repeat_detail}
               </span>
             </div>
           )}
           {(job.category_name || job.asset_code) && (
-            <div className="flex items-center gap-1.5 rounded-lg bg-(--secondary)/30 px-2 sm:px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-pink-500/10 to-rose-500/5 border border-pink-500/20 px-2 sm:px-2.5 py-1.5 group/pill transition-all hover:border-pink-500/40">
               <Tag
                 size={11}
-                className="shrink-0 text-(--muted-foreground)"
+                className="shrink-0 text-pink-400 group-hover/pill:scale-110 transition-transform"
               />
-              <span className="text-[10px] sm:text-[11px] text-(--foreground) truncate">
+              <span className="text-[10px] sm:text-[11px] text-pink-300/90 truncate font-medium">
                 {job.category_name || job.asset_code}
               </span>
             </div>
           )}
           {job.wallet_name && (
-            <div className="flex items-center gap-1.5 rounded-lg bg-(--secondary)/30 px-2 sm:px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 px-2 sm:px-2.5 py-1.5 group/pill transition-all hover:border-emerald-500/40">
               <Wallet
                 size={11}
-                className="shrink-0 text-(--muted-foreground)"
+                className="shrink-0 text-emerald-400 group-hover/pill:scale-110 transition-transform"
               />
-              <span className="text-[10px] sm:text-[11px] text-(--foreground) truncate">
+              <span className="text-[10px] sm:text-[11px] text-emerald-300/90 truncate font-medium">
                 {job.wallet_name}
               </span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 rounded-lg bg-(--secondary)/30 px-2 sm:px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-blue-500/10 to-indigo-500/5 border border-blue-500/20 px-2 sm:px-2.5 py-1.5 group/pill transition-all hover:border-blue-500/40">
             <Calendar
               size={11}
-              className="shrink-0 text-(--muted-foreground)"
+              className="shrink-0 text-blue-400 group-hover/pill:scale-110 transition-transform"
             />
-            <span className="text-[10px] sm:text-[11px] text-(--foreground) truncate">
+            <span className="text-[10px] sm:text-[11px] text-blue-300/90 truncate font-medium">
               {job.end_date ? fmtDate(job.end_date) : "Forever"}
             </span>
           </div>
         </div>
 
         {/* Row 3: Execution info */}
-        <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 mb-3 sm:ml-[48px]">
+        <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 mb-3 sm:ml-12">
           {job.next_execution && (
-            <div className="text-[10px] sm:text-[11px]">
-              <span className="text-(--muted-foreground)">Next → </span>
-              <span className="font-medium text-gold-400">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2 py-1 rounded-md bg-gold-400/5 border border-gold-400/20">
+              <span className="text-(--muted-foreground)">Next →</span>
+              <span className="font-semibold text-gold-400">
                 {fmtDate(job.next_execution)}
               </span>
             </div>
           )}
           {job.last_execution && (
-            <div className="text-[10px] sm:text-[11px]">
-              <span className="text-(--muted-foreground)">Last → </span>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2 py-1 rounded-md bg-(--secondary)/20">
+              <span className="text-(--muted-foreground)">Last →</span>
               <span className="font-medium text-(--foreground)">
                 {fmtDate(job.last_execution)}
               </span>
             </div>
           )}
           {job.execution_logs.length > 0 && (
-            <div className="flex items-center gap-2 text-[10px] sm:text-[11px]">
-              <span className="flex items-center gap-1 text-emerald-500">
-                <CheckCircle2 size={10} /> {successCount}
+            <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] px-2 py-1 rounded-md bg-(--secondary)/20">
+              <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                <CheckCircle2 size={10} className="drop-shadow-sm" />{" "}
+                {successCount}
               </span>
               {failedCount > 0 && (
-                <span className="flex items-center gap-1 text-rose-500">
-                  <XCircle size={10} /> {failedCount}
+                <span className="flex items-center gap-1 text-rose-400 font-medium">
+                  <XCircle size={10} className="drop-shadow-sm" /> {failedCount}
                 </span>
               )}
             </div>
@@ -716,7 +725,7 @@ function ScheduleCard({
         </div>
 
         {/* Row 4: Actions */}
-        <div className="flex items-center justify-between sm:ml-[48px]">
+        <div className="flex items-center justify-between sm:ml-12">
           <div className="flex gap-1.5">
             {job.status === "active" && (
               <button
@@ -726,7 +735,7 @@ function ScheduleCard({
                     name: job.description,
                   })
                 }
-                className="flex items-center gap-1 rounded-lg border border-(--border) px-2 sm:px-2.5 py-1 text-[10px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
+                className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2 sm:px-2.5 py-1.5 text-[10px] font-semibold text-amber-400 transition-all hover:bg-amber-500/15 hover:border-amber-500/50 hover:scale-[1.02]"
               >
                 <Pause size={10} /> Pause
               </button>
@@ -739,7 +748,7 @@ function ScheduleCard({
                     name: job.description,
                   })
                 }
-                className="flex items-center gap-1 rounded-lg border border-emerald-500/30 px-2 sm:px-2.5 py-1 text-[10px] font-medium text-emerald-400 transition hover:bg-emerald-500/10"
+                className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 sm:px-2.5 py-1.5 text-[10px] font-semibold text-emerald-400 transition-all hover:bg-emerald-500/15 hover:border-emerald-500/50 hover:scale-[1.02]"
               >
                 <Play size={10} /> Resume
               </button>
@@ -751,7 +760,7 @@ function ScheduleCard({
                   name: job.description,
                 })
               }
-              className="flex items-center gap-1 rounded-lg border border-rose-500/30 px-2 sm:px-2.5 py-1 text-[10px] font-medium text-rose-400/80 transition hover:text-rose-400 hover:bg-rose-500/10"
+              className="flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/5 px-2 sm:px-2.5 py-1.5 text-[10px] font-semibold text-rose-400 transition-all hover:bg-rose-500/15 hover:border-rose-500/50 hover:scale-[1.02]"
             >
               <Trash2 size={10} />
               <span className="hidden sm:inline">Delete</span>
@@ -760,7 +769,12 @@ function ScheduleCard({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:bg-(--secondary)/30"
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all",
+              expanded
+                ? "bg-violet-500/10 text-violet-400 border border-violet-500/30"
+                : "bg-(--secondary)/30 text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--secondary)/50",
+            )}
           >
             <Activity size={10} />
             {expanded ? (
@@ -769,8 +783,7 @@ function ScheduleCard({
               </>
             ) : (
               <>
-                Logs ({job.execution_logs.length}){" "}
-                <ChevronDown size={11} />
+                Logs ({job.execution_logs.length}) <ChevronDown size={11} />
               </>
             )}
           </button>
@@ -778,7 +791,7 @@ function ScheduleCard({
 
         {/* Expanded logs */}
         {expanded && (
-          <div className="mt-3 sm:ml-[48px]">
+          <div className="mt-3 sm:ml-12">
             <ExecutionLogTable logs={job.execution_logs} />
           </div>
         )}
@@ -958,18 +971,19 @@ export function ScheduledPage() {
           <>
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              <div className="relative flex flex-col gap-1 overflow-hidden rounded-xl border border-(--border) bg-(--card) px-3 sm:px-4 py-3">
-                <div
-                  className="absolute left-0 right-0 top-0 h-0.5 rounded-t-xl"
-                  style={{
-                    background: "linear-gradient(90deg, #10b981, #4ade80)",
-                  }}
-                />
+              <div
+                className="relative flex flex-col gap-1 overflow-hidden rounded-xl px-3 sm:px-4 py-3 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.04) 20%, var(--card) 40%)",
+                  border: "1px solid rgba(16, 185, 129, 0.25)",
+                }}
+              >
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-(--muted-foreground)">
                   Active
                 </span>
                 <div className="flex items-end gap-1.5">
-                  <span className="font-mono text-lg sm:text-xl font-bold text-(--foreground)">
+                  <span className="font-mono text-lg sm:text-xl font-bold text-emerald-400">
                     {totalActive}
                   </span>
                   {totalPaused > 0 && (
@@ -980,13 +994,14 @@ export function ScheduledPage() {
                 </div>
               </div>
 
-              <div className="relative flex flex-col gap-1 overflow-hidden rounded-xl border border-(--border) bg-(--card) px-3 sm:px-4 py-3">
-                <div
-                  className="absolute left-0 right-0 top-0 h-0.5 rounded-t-xl"
-                  style={{
-                    background: "linear-gradient(90deg, #daa520, #ffd700)",
-                  }}
-                />
+              <div
+                className="relative flex flex-col gap-1 overflow-hidden rounded-xl px-3 sm:px-4 py-3 transition-all duration-300 hover:shadow-lg hover:shadow-gold-400/10"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(218, 165, 32, 0.1) 0%, rgba(218, 165, 32, 0.04) 20%, var(--card) 40%)",
+                  border: "1px solid rgba(218, 165, 32, 0.25)",
+                }}
+              >
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-(--muted-foreground)">
                   Next Run
                 </span>
@@ -995,32 +1010,34 @@ export function ScheduledPage() {
                 </span>
               </div>
 
-              <div className="relative flex flex-col gap-1 overflow-hidden rounded-xl border border-(--border) bg-(--card) px-3 sm:px-4 py-3">
-                <div
-                  className="absolute left-0 right-0 top-0 h-0.5 rounded-t-xl"
-                  style={{
-                    background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-                  }}
-                />
+              <div
+                className="relative flex flex-col gap-1 overflow-hidden rounded-xl px-3 sm:px-4 py-3 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.04) 20%, var(--card) 40%)",
+                  border: "1px solid rgba(59, 130, 246, 0.25)",
+                }}
+              >
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-(--muted-foreground)">
                   Executed
                 </span>
-                <span className="font-mono text-lg sm:text-xl font-bold text-(--foreground)">
+                <span className="font-mono text-lg sm:text-xl font-bold text-blue-400">
                   {totalExecuted}
                 </span>
               </div>
 
-              <div className="relative flex flex-col gap-1 overflow-hidden rounded-xl border border-(--border) bg-(--card) px-3 sm:px-4 py-3">
-                <div
-                  className="absolute left-0 right-0 top-0 h-0.5 rounded-t-xl"
-                  style={{
-                    background: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
-                  }}
-                />
+              <div
+                className="relative flex flex-col gap-1 overflow-hidden rounded-xl px-3 sm:px-4 py-3 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.04) 20%, var(--card) 40%)",
+                  border: "1px solid rgba(139, 92, 246, 0.25)",
+                }}
+              >
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-(--muted-foreground)">
                   Monthly Auto
                 </span>
-                <span className="font-mono text-xs sm:text-sm font-bold text-(--foreground)">
+                <span className="font-mono text-xs sm:text-sm font-bold text-violet-400">
                   {fmtShortCurrency(totalMonthlyAmount)}
                 </span>
               </div>
@@ -1038,7 +1055,8 @@ export function ScheduledPage() {
                 onClick={() => setModal({ type: "create" })}
                 className="flex items-center gap-1.5 rounded-lg border border-(--border) px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
               >
-                <Plus size={14} /> <span className="hidden sm:inline">Create</span> Schedule
+                <Plus size={14} />{" "}
+                <span className="hidden sm:inline">Create</span> Schedule
               </button>
             </div>
 
@@ -1068,11 +1086,7 @@ export function ScheduledPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredJobs.map((job) => (
-                  <ScheduleCard
-                    key={job.id}
-                    job={job}
-                    onOpenModal={setModal}
-                  />
+                  <ScheduleCard key={job.id} job={job} onOpenModal={setModal} />
                 ))}
               </div>
             )}

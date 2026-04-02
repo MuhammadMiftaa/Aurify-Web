@@ -290,11 +290,13 @@
 @keyframes streak-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(134, 239, 172, 0.3),
+    box-shadow:
+      0 0 8px rgba(134, 239, 172, 0.3),
       0 0 2px rgba(134, 239, 172, 0.15);
   }
   50% {
-    box-shadow: 0 0 20px rgba(134, 239, 172, 0.5),
+    box-shadow:
+      0 0 20px rgba(134, 239, 172, 0.5),
       0 0 40px rgba(134, 239, 172, 0.15);
   }
 }
@@ -322,6 +324,20 @@
 .streak-fire-icon {
   display: inline-block;
   animation: streak-fire 1.5s ease-in-out infinite;
+}
+
+/* ── Spin Slow Animation ── */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
 }
 
 /* ── Scrollbar ── */

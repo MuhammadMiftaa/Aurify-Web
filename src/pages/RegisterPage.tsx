@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import {
   Input,
@@ -16,7 +15,7 @@ import {
   SUCCESS_MESSAGES,
 } from "@/lib/messages";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function RegisterPage() {
   const navigate = useNavigate();

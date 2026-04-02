@@ -283,7 +283,7 @@ function BudgetSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-        <div className="lg:col-span-7 rounded-xl border border-(--border) bg-(--card) p-5">
+        <div className="lg:col-span-7 lg:row-start-1 row-start-2 rounded-xl border border-(--border) bg-(--card) p-5">
           <div className="flex justify-between mb-4">
             <div>
               <Skeleton className="h-4 w-40 mb-2" />
@@ -298,7 +298,7 @@ function BudgetSkeleton() {
           <Skeleton className="h-3 w-full mb-2" />
           <Skeleton className="h-3 w-1/3" />
         </div>
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 row-start-1">
           <div className="rounded-xl border border-(--border) bg-(--card) p-5 flex flex-col items-center justify-center min-h-[180px]">
             <Skeleton className="h-12 w-12 rounded-full mb-3" />
             <Skeleton className="h-8 w-16 mb-2" />
@@ -413,7 +413,7 @@ function StreakPanel({ budget }: { budget: BudgetItem }) {
           </span>
         </div>
         <div className="text-[10px] text-(--muted-foreground) max-w-[200px]">
-          Under budget for {budget.streak_count} consecutive months 🎯
+          Under budget for {budget.streak_count} consecutive months
         </div>
       </div>
     </div>
@@ -665,7 +665,7 @@ export function BudgetPage() {
             {overallBudget && (
               <div className="grid grid-cols-1 lg:grid-cols-10 gap-3 sm:gap-4">
                 {/* Left: Overall Budget */}
-                <div className="lg:col-span-7 rounded-xl border border-(--border) bg-(--card) p-4 sm:p-5">
+                <div className="lg:col-span-7 lg:row-start-1 row-start-2 rounded-xl border border-(--border) bg-(--card) p-4 sm:p-5">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 sm:gap-3">
                     <div>
                       <div className="text-[13px] font-bold tracking-wide text-(--foreground)">
@@ -789,7 +789,7 @@ export function BudgetPage() {
                 </div>
 
                 {/* Right: Streak */}
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-3 row-start-1">
                   <StreakPanel budget={overallBudget} />
                 </div>
               </div>

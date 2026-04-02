@@ -364,7 +364,7 @@ export function CategoriesPage() {
                       />
                     </th>
                     <th className="px-4 py-3">
-                      <span className="flex justify-end text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+                      <span className="flex justify-center text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
                         Share
                       </span>
                     </th>
@@ -396,7 +396,7 @@ export function CategoriesPage() {
                             {cat.group_name}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3">
                           <span
                             className={cn(
                               "font-mono text-xs font-semibold",
@@ -408,12 +408,12 @@ export function CategoriesPage() {
                             {fmtCurrency(cat.total_amount)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3">
                           <span className="font-mono text-xs text-(--foreground)">
                             {cat.total_transactions}x
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-center">
                           <span className="text-xs text-(--muted-foreground)">
                             {cat.percentage.toFixed(1)}%
                           </span>
