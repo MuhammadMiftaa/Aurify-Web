@@ -123,8 +123,18 @@ export interface TransactionCategory {
   category_id: string;
   category_name: string;
   category_type: "income" | "expense" | "fund_transfer";
+  parent_category_name?: string;
   total_amount: number;
   total_transactions: number;
+}
+
+// ── Category Transaction (for transaction list modal) ──
+
+export interface CategoryTransaction {
+  id: string;
+  description: string;
+  amount: number;
+  transaction_date: string;
 }
 
 // ── Net Worth Composition ──

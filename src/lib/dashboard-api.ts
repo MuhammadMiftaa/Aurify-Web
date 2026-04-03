@@ -1,5 +1,6 @@
 import type {
   BalanceSnapshot,
+  CategoryTransaction,
   DateOption,
   DateRange,
   FinancialSummary,
@@ -107,5 +108,22 @@ export async function fetchNetWorthComposition(token: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({}),
+  });
+}
+
+// ── Category Transactions ──
+
+export async function fetchCategoryTransactions(
+  token: string,
+  opts: { walletID?: string; categoryID: string; dateOption: DateOption },
+) {
+  return bffCall<CategoryTransaction[]>(`${BFF_PREFIX}/category-transactions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      walletID: opts.walletID,
+      categoryID: opts.categoryID,
+      dateOption: opts.dateOption,
+    }),
   });
 }

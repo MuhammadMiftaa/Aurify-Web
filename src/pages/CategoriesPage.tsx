@@ -8,15 +8,21 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   PieChart,
+  RefreshCw as Refresh,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCategories, type CategoriesFilter } from "@/hooks/useCategories";
+import { useCategoryTransactions } from "@/hooks/useCategoryTransactions";
 import { useWallets } from "@/hooks/useDashboard";
+import { refreshCache } from "@/lib/cache-api";
 import type { CategoryBreakdownItem } from "@/types/dashboard";
+import toast from "react-hot-toast";
 
 // ════════════════════════════════════════════
 // HELPERS
@@ -49,7 +55,7 @@ function CategoriesSkeleton() {
           <Skeleton className="h-9 w-24" />
           <Skeleton className="h-9 w-24" />
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           <Skeleton className="h-9 w-24" />
           <Skeleton className="h-9 w-16" />
           <Skeleton className="h-9 w-16" />
@@ -123,6 +129,7 @@ function SortHeader({
 
 export function CategoriesPage() {
   const { theme, toggleTheme } = useTheme();
+  const { token } = useAuth();
 
   // Filters
   const [categoryTab, setCategoryTab] = useState<"expense" | "income">(
@@ -130,6 +137,10 @@ export function CategoriesPage() {
   );
   const [walletFilter, setWalletFilter] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+
+  // Modal state for transaction list
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryBreakdownItem | null>(null);
 
   // Build filter object for hook
   const filter: CategoriesFilter = useMemo(
@@ -148,7 +159,42 @@ export function CategoriesPage() {
     data: allCategories,
     loading,
     error,
+    refetch,
   } = useCategories(filter, categoryTab);
+
+  // Fetch category transactions for modal
+  const categoryTransactions = useCategoryTransactions();
+
+  // Handle category click to show transactions
+  const handleCategoryClick = (category: CategoryBreakdownItem) => {
+    setSelectedCategory(category);
+    categoryTransactions.fetch(
+      category.category_id,
+      category.category_name,
+      walletFilter || undefined,
+      filter.range,
+    );
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setSelectedCategory(null);
+    categoryTransactions.reset();
+  };
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    const tid = toast.loading("Refreshing categories cache...");
+    try {
+      await refreshCache("dashboard", token ?? undefined);
+      refetch();
+      toast.dismiss(tid);
+      toast.success("Categories refreshed");
+    } catch (err: any) {
+      toast.dismiss(tid);
+      toast.error(err?.message || "Failed to refresh cache");
+    }
+  };
 
   // Sorting
   const [sortBy, setSortBy] = useState("total_amount");
@@ -209,12 +255,21 @@ export function CategoriesPage() {
               Complete breakdown of income & expense categories
             </div>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="flex sm:hidden h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
-          >
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
+          <div className="flex items-center gap-2 sm:hidden">
+            <button
+              onClick={handleRefresh}
+              title="Refresh"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
+            >
+              <Refresh size={14} />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
+            >
+              {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -250,6 +305,15 @@ export function CategoriesPage() {
               className="w-[7.5rem] rounded-lg border border-(--border) bg-(--input) px-2 py-1.5 text-xs text-(--foreground) outline-none focus:border-(--ring)"
             />
           </div>
+
+          <button
+            onClick={handleRefresh}
+            title="Refresh"
+            className="hidden sm:flex h-8 items-center gap-1.5 rounded-lg border border-(--border) px-3 text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
+          >
+            <Refresh size={14} />
+            <span className="text-xs">Refresh</span>
+          </button>
 
           <button
             onClick={toggleTheme}
@@ -402,7 +466,8 @@ export function CategoriesPage() {
                     return (
                       <tr
                         key={cat.category_id}
-                        className="border-b border-(--border) last:border-0 transition hover:bg-(--muted)/30"
+                        onClick={() => handleCategoryClick(cat)}
+                        className="border-b border-(--border) last:border-0 transition hover:bg-(--muted)/30 cursor-pointer"
                       >
                         <td className="px-4 py-3 text-xs font-semibold text-(--foreground)">
                           {cat.category_name}
@@ -461,12 +526,24 @@ export function CategoriesPage() {
                   category={cat}
                   type={categoryTab}
                   maxAmount={maxAmount}
+                  onClick={() => handleCategoryClick(cat)}
                 />
               ))}
             </div>
           </>
         )}
       </main>
+
+      {/* ════════ TRANSACTION MODAL ════════ */}
+      {selectedCategory && (
+        <TransactionModal
+          category={selectedCategory}
+          transactions={categoryTransactions.data ?? []}
+          loading={categoryTransactions.loading}
+          error={categoryTransactions.error}
+          onClose={handleCloseModal}
+        />
+      )}
     </MainLayout>
   );
 }
@@ -479,16 +556,21 @@ function CategoryCard({
   category,
   type,
   maxAmount,
+  onClick,
 }: {
   category: CategoryBreakdownItem;
   type: "expense" | "income";
   maxAmount: number;
+  onClick?: () => void;
 }) {
   const barColor = type === "expense" ? "#f43f5e" : "#10b981";
   const pct = maxAmount > 0 ? (category.total_amount / maxAmount) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-(--border) bg-(--card) p-3.5 transition hover:border-gold-400/20">
+    <div
+      onClick={onClick}
+      className="rounded-xl border border-(--border) bg-(--card) p-3.5 transition hover:border-gold-400/20 cursor-pointer"
+    >
       <div className="flex items-start justify-between mb-2">
         <div className="min-w-0">
           <div className="text-xs font-semibold text-(--foreground) truncate">
@@ -517,6 +599,127 @@ function CategoryCard({
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, background: barColor, opacity: 0.7 }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════
+// TRANSACTION MODAL
+// ════════════════════════════════════════════
+
+function TransactionModal({
+  category,
+  transactions,
+  loading,
+  error,
+  onClose,
+}: {
+  category: CategoryBreakdownItem;
+  transactions: Array<{
+    id: string;
+    description: string;
+    amount: number;
+    transaction_date: string;
+  }>;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+}) {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-xl border border-(--border) bg-(--card) shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-(--border) px-5 py-4">
+          <div>
+            <h3 className="text-sm font-bold text-(--foreground)">
+              {category.category_name}
+            </h3>
+            <p className="text-[10px] text-(--muted-foreground)">
+              {category.group_name} · {category.total_transactions} transaction
+              {category.total_transactions !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div
+          className="overflow-y-auto p-5"
+          style={{ maxHeight: "calc(80vh - 80px)" }}
+        >
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-rose-500">{error}</p>
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-(--muted-foreground)">
+                No transactions found
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="flex items-center gap-3 rounded-lg border border-(--border) bg-(--secondary)/30 p-3 transition hover:bg-(--muted)/50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-(--foreground) truncate">
+                      {tx.description || "No description"}
+                    </div>
+                    <div className="text-[10px] text-(--muted-foreground)">
+                      {formatDate(tx.transaction_date)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={cn(
+                        "font-mono text-sm font-bold",
+                        category.category_type === "expense"
+                          ? "text-rose-500"
+                          : "text-emerald-500",
+                      )}
+                    >
+                      {fmtCurrency(tx.amount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

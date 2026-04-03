@@ -82,7 +82,7 @@ export function useCategories(
           category_id: t.category_id,
           category_name: t.category_name,
           category_type: categoryType,
-          group_name: "", // Group name not available from API, default to empty
+          group_name: t.parent_category_name ?? "",
           total_amount: t.total_amount,
           total_transactions: t.total_transactions,
           percentage:
