@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Sun,
   Moon,
@@ -9,17 +9,18 @@ import {
   X,
   Target,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useDemo } from "@/contexts/DemoContext";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import {
-  getDummyBudgets,
-  getDummyCategoryBreakdown,
-  type BudgetItem,
-} from "@/lib/dummy-data";
+import { useBudgetList, useBudgetMutations } from "@/hooks/useBudget";
+import { useWalletList } from "@/hooks/useWallet";
+import { useCategories } from "@/hooks/useTransaction";
+import type { BudgetItem } from "@/types/budget";
 import toast from "react-hot-toast";
 
 // ════════════════════════════════════════════
@@ -79,15 +80,36 @@ function GreenFire({
         fill="url(#gf3)"
       />
       <defs>
-        <linearGradient id="gf1" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="gf1"
+          x1="12"
+          y1="2"
+          x2="12"
+          y2="22"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="#4ade80" stopOpacity="0.6" />
           <stop offset="1" stopColor="#22c55e" />
         </linearGradient>
-        <linearGradient id="gf2" x1="12" y1="6" x2="12" y2="19.5" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="gf2"
+          x1="12"
+          y1="6"
+          x2="12"
+          y2="19.5"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="#86efac" />
           <stop offset="1" stopColor="#4ade80" />
         </linearGradient>
-        <linearGradient id="gf3" x1="12" y1="10" x2="12" y2="18" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="gf3"
+          x1="12"
+          y1="10"
+          x2="12"
+          y2="18"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="#bbf7d0" />
           <stop offset="1" stopColor="#86efac" />
         </linearGradient>
@@ -151,18 +173,70 @@ function Modal({
 
 function SetBudgetForm({
   onClose,
+  onSubmit,
   categoryName,
+  editBudget,
+  isLoading,
 }: {
   onClose: () => void;
+  onSubmit: (data: {
+    scope: "overall" | "category";
+    category_id?: string;
+    wallet_id?: string;
+    monthly_limit: number;
+    period: string;
+  }) => void;
   categoryName?: string;
+  editBudget?: BudgetItem;
+  isLoading?: boolean;
 }) {
-  const [amount, setAmount] = useState("");
-  const categories = getDummyCategoryBreakdown("expense");
-  const [selectedCategory, setSelectedCategory] = useState(categoryName || "");
+  const { isDemo } = useDemo();
+  const [amount, setAmount] = useState(
+    editBudget ? String(editBudget.monthly_limit) : "",
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    editBudget?.category_id || "",
+  );
+  const [selectedWallet, setSelectedWallet] = useState(
+    editBudget?.wallet_id || "",
+  );
+  const [period, setPeriod] = useState(
+    editBudget?.period || new Date().toISOString().slice(0, 7),
+  );
+
+  // Fetch categories and wallets for dropdowns
+  const { data: categories } = useCategories();
+  const { data: wallets } = useWalletList();
+
+  // Filter expense categories only for budgets
+  const expenseCategories = useMemo(
+    () => categories?.filter((c) => c.type === "expense") || [],
+    [categories],
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Demo mode — data is read-only", { icon: "🔒" });
+
+    if (isDemo) {
+      toast("Demo mode — data is read-only", { icon: "🔒" });
+      return;
+    }
+
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    onSubmit({
+      scope: categoryName || selectedCategory ? "category" : "overall",
+      category_id: categoryName
+        ? expenseCategories.find((c) => c.name === categoryName)?.id
+        : selectedCategory || undefined,
+      wallet_id: selectedWallet || undefined,
+      monthly_limit: numericAmount,
+      period,
+    });
   };
 
   return (
@@ -178,14 +252,31 @@ function SetBudgetForm({
             className="w-full rounded-lg border border-(--border) bg-(--input) px-3 py-2 text-xs text-(--foreground) outline-none focus:border-(--ring)"
           >
             <option value="">Overall Budget</option>
-            {categories.map((c) => (
-              <option key={c.category_id} value={c.category_name}>
-                {c.category_name}
+            {expenseCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
               </option>
             ))}
           </select>
         </div>
       )}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-(--foreground) opacity-80">
+          Wallet Scope
+        </label>
+        <select
+          value={selectedWallet}
+          onChange={(e) => setSelectedWallet(e.target.value)}
+          className="w-full rounded-lg border border-(--border) bg-(--input) px-3 py-2 text-xs text-(--foreground) outline-none focus:border-(--ring)"
+        >
+          <option value="">All Wallets</option>
+          {wallets?.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="space-y-1.5">
         <label className="block text-xs font-medium text-(--foreground) opacity-80">
           Monthly Limit (IDR)
@@ -204,7 +295,8 @@ function SetBudgetForm({
         </label>
         <input
           type="month"
-          defaultValue="2026-03"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
           className="w-full rounded-lg border border-(--border) bg-(--input) px-3 py-2 text-xs text-(--foreground) outline-none focus:border-(--ring)"
         />
       </div>
@@ -218,9 +310,10 @@ function SetBudgetForm({
         </button>
         <button
           type="submit"
-          className="flex-1 rounded-lg bg-gold-btn px-3 py-2 text-xs font-semibold text-dark transition hover:opacity-90"
+          disabled={isLoading}
+          className="flex-1 rounded-lg bg-gold-btn px-3 py-2 text-xs font-semibold text-dark transition hover:opacity-90 disabled:opacity-50"
         >
-          Save Budget
+          {isLoading ? "Saving..." : "Save Budget"}
         </button>
       </div>
     </form>
@@ -236,14 +329,24 @@ function ConfirmDialog({
   confirmLabel,
   variant,
   onClose,
+  onConfirm,
+  isLoading,
 }: {
   message: string;
   confirmLabel: string;
   variant: "danger" | "warning";
   onClose: () => void;
+  onConfirm: () => void;
+  isLoading?: boolean;
 }) {
+  const { isDemo } = useDemo();
+
   const handleConfirm = () => {
-    toast("Demo mode — data is read-only", { icon: "🔒" });
+    if (isDemo) {
+      toast("Demo mode — data is read-only", { icon: "🔒" });
+      return;
+    }
+    onConfirm();
   };
 
   return (
@@ -261,14 +364,15 @@ function ConfirmDialog({
         </button>
         <button
           onClick={handleConfirm}
+          disabled={isLoading}
           className={cn(
-            "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition",
+            "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:opacity-50",
             variant === "danger"
               ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30"
               : "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30",
           )}
         >
-          {confirmLabel}
+          {isLoading ? "Processing..." : confirmLabel}
         </button>
       </div>
     </div>
@@ -308,7 +412,10 @@ function BudgetSkeleton() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-(--border) bg-(--card) p-4">
+          <div
+            key={i}
+            className="rounded-xl border border-(--border) bg-(--card) p-4"
+          >
             <div className="flex justify-between mb-3">
               <div>
                 <Skeleton className="h-3 w-24 mb-1" />
@@ -431,9 +538,9 @@ function BudgetCategoryCard({
   onDeleteBudget,
 }: {
   budget: BudgetItem;
-  onSetBudget: (name: string) => void;
-  onResetBudget: (name: string) => void;
-  onDeleteBudget: (name: string) => void;
+  onSetBudget: (budget: BudgetItem) => void;
+  onResetBudget: (budget: BudgetItem) => void;
+  onDeleteBudget: (budget: BudgetItem) => void;
 }) {
   const spent = budget.current_spent;
   const limit = budget.monthly_limit;
@@ -454,9 +561,7 @@ function BudgetCategoryCard({
             {budget.category_name}
           </div>
           <div className="text-[10px] text-(--muted-foreground)">
-            {budget.wallet_scope === "all"
-              ? "All Wallets"
-              : budget.wallet_name}
+            {budget.wallet_scope === "all" ? "All Wallets" : budget.wallet_name}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
@@ -512,19 +617,19 @@ function BudgetCategoryCard({
       {/* Per-category action buttons */}
       <div className="flex gap-1.5 mt-3 pt-3 border-t border-(--border)">
         <button
-          onClick={() => onSetBudget(budget.category_name || "")}
+          onClick={() => onSetBudget(budget)}
           className="flex items-center gap-1 rounded-lg border border-(--border) px-2 py-1 text-[10px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
         >
           <Pencil size={10} /> Edit
         </button>
         <button
-          onClick={() => onResetBudget(budget.category_name || "")}
+          onClick={() => onResetBudget(budget)}
           className="flex items-center gap-1 rounded-lg border border-(--border) px-2 py-1 text-[10px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
         >
           <RotateCcw size={10} /> Reset
         </button>
         <button
-          onClick={() => onDeleteBudget(budget.category_name || "")}
+          onClick={() => onDeleteBudget(budget)}
           className="flex items-center gap-1 rounded-lg border border-rose-500/30 px-2 py-1 text-[10px] font-medium text-rose-400/80 transition hover:text-rose-400 hover:bg-rose-500/10"
         >
           <Trash2 size={10} />
@@ -540,27 +645,88 @@ function BudgetCategoryCard({
 
 type ModalState =
   | { type: "none" }
-  | { type: "set-budget"; categoryName?: string }
-  | { type: "reset-budget"; name: string }
-  | { type: "delete-budget"; name: string };
+  | { type: "set-budget"; categoryName?: string; editBudget?: BudgetItem }
+  | { type: "reset-budget"; budget: BudgetItem }
+  | { type: "delete-budget"; budget: BudgetItem };
 
 export function BudgetPage() {
   const { theme, toggleTheme } = useTheme();
-  const [selectedPeriod] = useState("2026-03");
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    new Date().toISOString().slice(0, 7),
+  );
   const [modal, setModal] = useState<ModalState>({ type: "none" });
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Simulate loading
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
+  // Use budget hook instead of dummy data
+  const {
+    data: budgets,
+    loading,
+    error,
+    refetch,
+    refresh,
+  } = useBudgetList(selectedPeriod);
 
-  const budgets = useMemo(() => getDummyBudgets(), []);
-  const overallBudget = budgets.find((b) => b.scope === "overall");
-  const categoryBudgets = budgets.filter((b) => b.scope === "category");
+  const {
+    loading: mutationLoading,
+    createBudget,
+    updateBudget,
+    deleteBudget,
+    resetBudget,
+  } = useBudgetMutations(() => {
+    refetch();
+    closeModal();
+  });
+
+  const overallBudget = useMemo(
+    () => budgets?.find((b) => b.scope === "overall"),
+    [budgets],
+  );
+  const categoryBudgets = useMemo(
+    () => budgets?.filter((b) => b.scope === "category") || [],
+    [budgets],
+  );
 
   const closeModal = () => setModal({ type: "none" });
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
+
+  // Handle form submit
+  const handleSetBudgetSubmit = async (data: {
+    scope: "overall" | "category";
+    category_id?: string;
+    wallet_id?: string;
+    monthly_limit: number;
+    period: string;
+  }) => {
+    if (modal.type === "set-budget" && modal.editBudget) {
+      // Update existing budget
+      await updateBudget(modal.editBudget.id, {
+        monthly_limit: data.monthly_limit,
+      });
+    } else {
+      // Create new budget
+      await createBudget(data);
+    }
+  };
+
+  // Handle reset budget
+  const handleResetBudget = async () => {
+    if (modal.type === "reset-budget") {
+      await resetBudget(modal.budget.id);
+    }
+  };
+
+  // Handle delete budget
+  const handleDeleteBudget = async () => {
+    if (modal.type === "delete-budget") {
+      await deleteBudget(modal.budget.id);
+    }
+  };
 
   return (
     <MainLayout>
@@ -568,17 +734,24 @@ export function BudgetPage() {
       <Modal
         open={modal.type === "set-budget"}
         title={
-          modal.type === "set-budget" && modal.categoryName
-            ? `Edit Budget: ${modal.categoryName}`
-            : "Set Budget"
+          modal.type === "set-budget" && modal.editBudget
+            ? `Edit Budget: ${modal.editBudget.category_name || "Overall"}`
+            : modal.type === "set-budget" && modal.categoryName
+              ? `Set Budget: ${modal.categoryName}`
+              : "Set Budget"
         }
         onClose={closeModal}
       >
         <SetBudgetForm
           onClose={closeModal}
+          onSubmit={handleSetBudgetSubmit}
           categoryName={
             modal.type === "set-budget" ? modal.categoryName : undefined
           }
+          editBudget={
+            modal.type === "set-budget" ? modal.editBudget : undefined
+          }
+          isLoading={mutationLoading}
         />
       </Modal>
 
@@ -588,10 +761,12 @@ export function BudgetPage() {
         onClose={closeModal}
       >
         <ConfirmDialog
-          message={`Are you sure you want to reset the budget for "${modal.type === "reset-budget" ? modal.name : ""}"? This will clear the current spending progress.`}
+          message={`Are you sure you want to reset the budget for "${modal.type === "reset-budget" ? modal.budget.category_name || "Overall" : ""}"? This will refresh the current spending data.`}
           confirmLabel="Reset"
           variant="warning"
           onClose={closeModal}
+          onConfirm={handleResetBudget}
+          isLoading={mutationLoading}
         />
       </Modal>
 
@@ -601,10 +776,12 @@ export function BudgetPage() {
         onClose={closeModal}
       >
         <ConfirmDialog
-          message={`Are you sure you want to delete the budget for "${modal.type === "delete-budget" ? modal.name : ""}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete the budget for "${modal.type === "delete-budget" ? modal.budget.category_name || "Overall" : ""}"? This action cannot be undone.`}
           confirmLabel="Delete"
           variant="danger"
           onClose={closeModal}
+          onConfirm={handleDeleteBudget}
+          isLoading={mutationLoading}
         />
       </Modal>
 
@@ -627,9 +804,22 @@ export function BudgetPage() {
           </button>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="rounded-lg border border-(--border) bg-(--input) px-3 py-1.5 text-xs font-medium text-(--foreground)">
-            {getMonthLabel(selectedPeriod)}
-          </div>
+          {/* Period Selector */}
+          <input
+            type="month"
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="rounded-lg border border-(--border) bg-(--input) px-3 py-1.5 text-xs font-medium text-(--foreground) outline-none focus:border-(--ring)"
+          />
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground) disabled:opacity-50"
+            title="Refresh data"
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          </button>
           <button
             onClick={toggleTheme}
             className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-(--border) text-(--muted-foreground) transition hover:bg-(--muted) hover:text-(--foreground)"
@@ -643,7 +833,22 @@ export function BudgetPage() {
       <main className="mx-auto flex max-w-350 flex-col gap-4 p-3 sm:p-5">
         {loading ? (
           <BudgetSkeleton />
-        ) : budgets.length === 0 ? (
+        ) : error ? (
+          <EmptyState
+            illustration="empty"
+            title="Failed to load budgets"
+            description={error}
+            size="lg"
+            action={
+              <button
+                onClick={() => refetch()}
+                className="flex items-center gap-1.5 rounded-lg bg-gold-btn px-4 py-2 text-xs font-semibold text-dark transition hover:opacity-90"
+              >
+                <RefreshCw size={14} /> Try Again
+              </button>
+            }
+          />
+        ) : !budgets || budgets.length === 0 ? (
           <EmptyState
             illustration="empty"
             title="No budgets set"
@@ -677,7 +882,12 @@ export function BudgetPage() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <button
-                        onClick={() => setModal({ type: "set-budget" })}
+                        onClick={() =>
+                          setModal({
+                            type: "set-budget",
+                            editBudget: overallBudget,
+                          })
+                        }
                         className="flex items-center gap-1 rounded-lg border border-(--border) px-2 py-1.5 text-[11px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
                       >
                         <Pencil size={11} /> Edit
@@ -686,7 +896,7 @@ export function BudgetPage() {
                         onClick={() =>
                           setModal({
                             type: "reset-budget",
-                            name: "Overall Budget",
+                            budget: overallBudget,
                           })
                         }
                         className="flex items-center gap-1 rounded-lg border border-(--border) px-2 py-1.5 text-[11px] font-medium text-(--muted-foreground) transition hover:text-(--foreground) hover:border-(--ring)"
@@ -697,7 +907,7 @@ export function BudgetPage() {
                         onClick={() =>
                           setModal({
                             type: "delete-budget",
-                            name: "Overall Budget",
+                            budget: overallBudget,
                           })
                         }
                         className="flex items-center gap-1 rounded-lg border border-rose-500/30 px-2 py-1.5 text-[11px] font-medium text-rose-400/80 transition hover:text-rose-400 hover:bg-rose-500/10"
@@ -827,14 +1037,14 @@ export function BudgetPage() {
                     <BudgetCategoryCard
                       key={b.id}
                       budget={b}
-                      onSetBudget={(name) =>
-                        setModal({ type: "set-budget", categoryName: name })
+                      onSetBudget={(budget) =>
+                        setModal({ type: "set-budget", editBudget: budget })
                       }
-                      onResetBudget={(name) =>
-                        setModal({ type: "reset-budget", name })
+                      onResetBudget={(budget) =>
+                        setModal({ type: "reset-budget", budget })
                       }
-                      onDeleteBudget={(name) =>
-                        setModal({ type: "delete-budget", name })
+                      onDeleteBudget={(budget) =>
+                        setModal({ type: "delete-budget", budget })
                       }
                     />
                   ))}
