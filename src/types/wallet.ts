@@ -16,6 +16,11 @@ export interface WalletType {
   type: string;
   description: string | null;
   nature?: WalletNature;
+  /**
+   * Logo uploaded from the admin panel. Absent for types created before
+   * uploads existed, which fall back to the name-derived asset path.
+   */
+  icon_url?: string;
 }
 
 export interface Wallet {
@@ -63,4 +68,20 @@ export function isLiabilityWallet(wallet: Wallet): boolean {
     (wallet.wallet_type_nature ?? wallet.wallet_type_detail?.nature) ===
     "liability"
   );
+}
+
+/**
+ * Resolves the logo for a wallet type.
+ *
+ * Prefers the uploaded logo, which is stored on the type itself and therefore
+ * survives a rename. Falls back to the legacy convention of slugifying the name
+ * into a fixed asset path, so the types that predate uploads keep their logos.
+ */
+export function walletTypeLogoUrl(
+  detail: WalletType | undefined,
+  legacyBaseUrl: string,
+  slugify: (text: string) => string,
+): string {
+  if (detail?.icon_url) return detail.icon_url;
+  return `${legacyBaseUrl}${slugify(detail?.name ?? "")}.png`;
 }

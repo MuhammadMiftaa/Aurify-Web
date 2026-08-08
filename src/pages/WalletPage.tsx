@@ -36,7 +36,7 @@ import type {
   UpdateWalletPayload,
 } from "@/types/wallet";
 import type { WalletType } from "@/types/wallet";
-import { isLiabilityWallet } from "@/types/wallet";
+import { isLiabilityWallet, walletTypeLogoUrl } from "@/types/wallet";
 import toast from "react-hot-toast";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { ASSET_URL } from "@/lib/url";
@@ -134,9 +134,27 @@ function WalletCard({
             </div> */}
             <img
               className="h-12 w-12 rounded object-contain"
-              src={`${ASSET_URL.WalletType}${slugify(wallet.wallet_type_detail?.name ?? "")}.png`}
+              src={walletTypeLogoUrl(
+                wallet.wallet_type_detail,
+                ASSET_URL.WalletType,
+                slugify,
+              )}
               alt={wallet.name}
+              loading="lazy"
+              // A missing logo is expected — most types have no upload and no
+              // legacy asset either. Swap in the type icon rather than leaving
+              // the browser's broken-image glyph.
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+              }}
             />
+            <div
+              className="hidden h-12 w-12 shrink-0 items-center justify-center rounded bg-(--muted) text-(--muted-foreground) [&:not(.hidden)]:flex"
+              aria-hidden="true"
+            >
+              {getWalletTypeIcon(wallet.wallet_type_detail?.type ?? "bank")}
+            </div>
             <div>
               <div className="text-sm font-bold text-(--foreground)">
                 {wallet.name}
