@@ -101,6 +101,8 @@ jobs:
             export STG_REFINA_WEB_TAG=${{ env.TAG_NAME }} &&
 
             cd ~/web/staging/refinamicroservices &&
+            # UPDATE FILE .env LOKAL AGAR TETAP SINKRON
+            sed -i \"s|^STG_REFINA_WEB_TAG=.*|STG_REFINA_WEB_TAG=\${STG_REFINA_WEB_TAG}|\" .env &&
 
             podman login -u ${{ github.actor }} -p ${{ secrets.GHCR_TOKEN }} ${{ env.REGISTRY }} &&
             podman pull \$STG_REFINA_WEB:\$STG_REFINA_WEB_TAG &&
@@ -143,6 +145,8 @@ jobs:
             export PROD_REFINA_WEB_TAG=${{ env.TAG_NAME }} &&
 
             cd ~/web/production/refinamicroservices &&
+            # UPDATE FILE .env LOKAL AGAR TETAP SINKRON
+            sed -i \"s|^PROD_REFINA_WEB_TAG=.*|PROD_REFINA_WEB_TAG=\${PROD_REFINA_WEB_TAG}|\" .env &&
 
             podman login -u ${{ github.actor }} -p ${{ secrets.GHCR_TOKEN }} ${{ env.REGISTRY }} &&
             podman pull \$PROD_REFINA_WEB:\$PROD_REFINA_WEB_TAG &&

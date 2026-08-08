@@ -1,4 +1,5 @@
 import type { Wallet, WalletType, WalletSummary } from "@/types/wallet";
+import { isLiabilityWallet } from "@/types/wallet";
 import type {
   Transaction,
   TransactionListResponse,
@@ -87,6 +88,16 @@ export const DUMMY_WALLET_TYPES: WalletType[] = [
     type: "e-wallet",
     description: "DANA Digital Wallet",
   },
+  {
+    id: "wt-008",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    deleted_at: null,
+    name: "BCA Credit Card",
+    type: "credit_card",
+    description: "BCA Credit Card",
+    nature: "liability",
+  },
 ];
 
 // ════════════════════════════════════════════
@@ -172,6 +183,22 @@ export const DUMMY_WALLETS: Wallet[] = [
     wallet_type_detail: DUMMY_WALLET_TYPES[5],
     transaction_count: 24,
   },
+  {
+    id: "w-007",
+    created_at: "2025-06-18T09:00:00Z",
+    updated_at: "2026-02-28T12:00:00Z",
+    deleted_at: null,
+    user_id: "user-001",
+    wallet_type_id: "wt-008",
+    name: "BCA Everyday Card",
+    // For a credit line this is the limit still available: a 20jt limit with
+    // 6,4jt already spent.
+    balance: 13600000,
+    number: "4532",
+    wallet_type_detail: DUMMY_WALLET_TYPES[7],
+    wallet_type_nature: "liability",
+    transaction_count: 38,
+  },
 ];
 
 // ════════════════════════════════════════════
@@ -180,7 +207,14 @@ export const DUMMY_WALLETS: Wallet[] = [
 
 export const DUMMY_WALLET_SUMMARY: WalletSummary = {
   total_wallets: DUMMY_WALLETS.length,
-  total_balance: DUMMY_WALLETS.reduce((sum, w) => sum + w.balance, 0),
+  total_balance: DUMMY_WALLETS.filter((w) => !isLiabilityWallet(w)).reduce(
+    (sum, w) => sum + w.balance,
+    0,
+  ),
+  total_credit_available: DUMMY_WALLETS.filter(isLiabilityWallet).reduce(
+    (sum, w) => sum + w.balance,
+    0,
+  ),
   total_transactions: DUMMY_WALLETS.reduce(
     (sum, w) => sum + (w.transaction_count ?? 0),
     0,

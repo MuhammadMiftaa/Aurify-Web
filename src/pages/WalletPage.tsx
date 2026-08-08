@@ -3,6 +3,7 @@ import {
   Plus,
   Wallet,
   CreditCard,
+  Landmark,
   Banknote,
   Search,
   X,
@@ -35,6 +36,7 @@ import type {
   UpdateWalletPayload,
 } from "@/types/wallet";
 import type { WalletType } from "@/types/wallet";
+import { isLiabilityWallet } from "@/types/wallet";
 import toast from "react-hot-toast";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { ASSET_URL } from "@/lib/url";
@@ -60,11 +62,15 @@ function fmtCurrency(n: number): string {
 function getWalletTypeIcon(type: string) {
   switch (type) {
     case "bank":
-      return <CreditCard size={14} />;
+      return <Landmark size={14} />;
     case "e-wallet":
       return <Wallet size={14} />;
+    // "physical" is what the wallet service seeds; "cash" appears in demo data.
+    case "physical":
     case "cash":
       return <Banknote size={14} />;
+    case "credit_card":
+      return <CreditCard size={14} />;
     default:
       return <CreditCard size={14} />;
   }
@@ -83,6 +89,14 @@ function WalletCard({
   onEdit: (w: WalletT) => void;
   onDelete: (w: WalletT) => void;
 }) {
+  const isLiability = isLiabilityWallet(wallet);
+  // A zero balance means "no money left" for an asset wallet, but "limit fully
+  // used" for a credit line — the worst moment to offer deletion. Credit lines
+  // are instead safe to remove once nothing has been spent on them.
+  const canDelete = isLiability
+    ? !wallet.transaction_count
+    : !wallet.balance || wallet.balance === 0;
+
   return (
     <div
       className="group relative overflow-hidden rounded-2xl border transition-all duration-500 hover:scale-[1.02]"
@@ -143,7 +157,7 @@ function WalletCard({
             >
               <Edit3 size={14} />
             </button>
-            {(!wallet.balance || wallet.balance === 0) && (
+            {canDelete && (
               <button
                 onClick={() => onDelete(wallet)}
                 className="rounded-lg p-1.5 text-(--muted-foreground) transition hover:bg-rose-500/10 hover:text-rose-400"
@@ -155,10 +169,10 @@ function WalletCard({
           </div>
         </div>
 
-        {/* Balance */}
+        {/* Balance — for a credit line this is the limit still available */}
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-widest text-(--muted-foreground)">
-            Balance
+            {isLiability ? "Available Limit" : "Balance"}
           </div>
           <div
             className="mt-1 font-mono text-2xl font-bold"
@@ -295,11 +309,23 @@ function WalletFormModal({
       setName(wallet?.name ?? "");
       setWalletTypeId(wallet?.wallet_type_id ?? "");
       setNumber(wallet?.number ?? "");
-      setInitialDeposit("");
+      // Only a credit line exposes its balance for editing, so it is the only
+      // case worth prefilling.
+      setInitialDeposit(
+        wallet && isLiabilityWallet(wallet) ? String(wallet.balance ?? 0) : "",
+      );
     }
   }, [open, wallet]);
 
   if (!open) return null;
+
+  // A credit line opens with its limit rather than a deposit, and that limit
+  // stays editable afterwards because only the issuer can change it.
+  const isLiabilityType =
+    walletTypes.find((wt) => wt.id === walletTypeId)?.nature === "liability";
+  const amountLabel = isLiabilityType
+    ? "Credit Limit (IDR)"
+    : "Initial Deposit (IDR)";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,6 +337,9 @@ function WalletFormModal({
         wallet_type_id: walletTypeId,
         number,
       };
+      if (isLiabilityType && initialDeposit !== "") {
+        payload.balance = parseFloat(initialDeposit) || 0;
+      }
       onSubmit(payload, true);
     } else {
       const payload: CreateWalletPayload = {
@@ -385,9 +414,9 @@ function WalletFormModal({
             required
           />
 
-          {!isEdit && (
+          {(!isEdit || isLiabilityType) && (
             <Input
-              label="Initial Deposit (IDR)"
+              label={amountLabel}
               type="number"
               value={initialDeposit}
               onChange={(e) => setInitialDeposit(e.target.value)}
@@ -522,9 +551,18 @@ export function WalletPage() {
     if (filterType) {
       list = list.filter((w) => w.wallet_type_detail?.type === filterType);
     }
+    // Credit lines are kept out of the balance total: their balance is the
+    // limit still available to borrow, not money owned.
+    const assets = list.filter((w) => !isLiabilityWallet(w));
+    const liabilities = list.filter(isLiabilityWallet);
     return {
       total_wallets: list.length,
-      total_balance: list.reduce((sum, w) => sum + (w.balance ?? 0), 0),
+      total_balance: assets.reduce((sum, w) => sum + (w.balance ?? 0), 0),
+      total_credit_available: liabilities.reduce(
+        (sum, w) => sum + (w.balance ?? 0),
+        0,
+      ),
+      has_credit_line: liabilities.length > 0,
       total_transactions: list.reduce(
         (sum, w) => sum + (w.transaction_count ?? 0),
         0,
@@ -631,7 +669,14 @@ export function WalletPage() {
 
       <div className="mx-auto max-w-350 p-3 sm:p-5">
         {/* Summary Cards */}
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div
+          className={cn(
+            "mb-6 grid grid-cols-1 gap-3",
+            computedSummary?.has_credit_line
+              ? "sm:grid-cols-2 lg:grid-cols-4"
+              : "sm:grid-cols-3",
+          )}
+        >
           {walletList.loading ? (
             <>
               <Skeleton className="h-20" />
@@ -652,6 +697,16 @@ export function WalletPage() {
                 icon={<Banknote size={18} />}
                 accent="#10b981"
               />
+              {/* Shown separately from Total Balance: available credit is
+                  borrowing capacity, not money owned. */}
+              {computedSummary.has_credit_line && (
+                <SummaryCard
+                  label="Available Credit"
+                  value={fmtShort(computedSummary.total_credit_available)}
+                  icon={<CreditCard size={18} />}
+                  accent="#a855f7"
+                />
+              )}
               <SummaryCard
                 label="Total Transactions"
                 value={String(computedSummary.total_transactions)}
